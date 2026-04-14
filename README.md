@@ -1,5 +1,7 @@
 # Cover Selector 🎬
 
+[English](README.md) · [中文](README.zh.md)
+
 Extract perfect video cover frames and generate rich triple-collage compositions automatically.
 
 **Key Features:**
