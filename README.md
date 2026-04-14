@@ -210,7 +210,15 @@ Integrate into the pipeline in `complete_pipeline.py`.
 
 ## Contributing
 
-Contributions welcome! Areas for improvement:
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Setting up development environment
+- Code style and quality standards
+- Testing requirements
+- Pull request process
+
+### Areas for Improvement
+
+Help wanted in these areas:
 
 - [ ] Real face detection integration (MediaPipe alternative)
 - [ ] ML-based quality scoring
@@ -233,10 +241,7 @@ Built with:
 
 ## Support
 
-- 📖 [Full Documentation](docs/)
-
-## Support
-
 For questions or feedback:
 - Visit the [GitHub repository](https://github.com/redredchen01/cover-selector-mvp)
 - Check existing code and documentation
+- Review test examples in `tests/` directory
