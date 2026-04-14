@@ -1,7 +1,5 @@
 # Cover Selector 🎬
 
-[English](README.md) · [中文](README.zh.md)
-
 Extract perfect video cover frames and generate rich triple-collage compositions automatically.
 
 **Key Features:**
@@ -234,5 +232,9 @@ Built with:
 ## Support
 
 - 📖 [Full Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/yourusername/cover-selector/issues)
-- 💬 [Discussions](https://github.com/yourusername/cover-selector/discussions)
+
+## Support
+
+For questions or feedback:
+- Visit the [GitHub repository](https://github.com/redredchen01/cover-selector-mvp)
+- Check existing code and documentation
