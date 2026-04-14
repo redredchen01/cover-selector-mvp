@@ -232,11 +232,15 @@ MIT 许可证 — 见 [LICENSE](LICENSE) 文件
 ## 支持
 
 - 📖 [完整文档](README.md)
-- 🐛 [问题跟踪](https://github.com/redredchen01/cover-selector-mvp/issues)
-- 💬 [讨论区](https://github.com/redredchen01/cover-selector-mvp/discussions)
 
 ---
 
 **快速导航：**
 - 英文版 README: [README.md](README.md)
 - GitHub: [redredchen01/cover-selector-mvp](https://github.com/redredchen01/cover-selector-mvp)
+
+## 支持
+
+如有问题或反馈：
+- 访问 [GitHub 仓库](https://github.com/redredchen01/cover-selector-mvp)
+- 查看现有代码和文档
