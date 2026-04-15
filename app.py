@@ -7,11 +7,16 @@ import json
 import os
 import sys
 import tempfile
+import uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 os.chdir(Path(__file__).parent)
+
+# Initialize session manager
+from cover_selector.web.session_manager import SessionManager
+session_manager = SessionManager()
 
 HTML = """<!DOCTYPE html>
 <html>
@@ -262,26 +267,78 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
                 except:
                     # Fallback to URL decode
                     file_path = unquote(file_path)
-                file_path = Path(file_path)
-                print(
-                    f"[DEBUG] Download request: {file_path}, exists={file_path.exists()}",
-                    file=sys.stderr,
-                )
-                if file_path.exists():
-                    self.send_response(200)
-                    self.send_header("Content-type", "image/jpeg")
-                    self.send_header("Content-Disposition", f'inline; filename="{file_path.name}"')
-                    self.end_headers()
-                    with open(file_path, "rb") as f:
-                        self.wfile.write(f.read())
-                else:
-                    print(f"[ERROR] File not found: {file_path}", file=sys.stderr)
+                file_path = Path(file_path).resolve()
+                output_dir = (Path(__file__).parent / "output" / "covers").resolve()
+
+                # Security: validate path is within output_dir
+                if not file_path.is_relative_to(output_dir):
+                    print(f"[SECURITY] Path traversal attempt blocked: {file_path}", file=sys.stderr)
+                    self.send_error(403)
+                    return
+
+                if not file_path.is_file():
+                    print(f"[ERROR] File not found or not a regular file: {file_path}", file=sys.stderr)
                     self.send_error(404)
+                    return
+
+                self.send_response(200)
+                self.send_header("Content-type", "image/jpeg")
+                self.send_header("Content-Disposition", f'inline; filename="{file_path.name}"')
+                self.end_headers()
+                with open(file_path, "rb") as f:
+                    self.wfile.write(f.read())
             except Exception as e:
                 print(f"[ERROR] Download: {e}", file=sys.stderr)
                 import traceback
 
                 traceback.print_exc(file=sys.stderr)
+                self.send_error(500)
+        elif self.path.startswith("/api/progress/"):
+            # Get session progress endpoint
+            try:
+                session_id = self.path.split("/api/progress/")[1].split("?")[0]
+                # Validate session_id is UUID format
+                try:
+                    uuid.UUID(session_id)
+                except ValueError:
+                    self.send_error(400)
+                    return
+
+                progress = session_manager.get_progress(session_id)
+                if progress is None:
+                    self.send_response(404)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "Session not found"}).encode("utf-8"))
+                else:
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(progress).encode("utf-8"))
+            except Exception as e:
+                print(f"[ERROR] Progress API: {e}", file=sys.stderr)
+                self.send_error(500)
+        elif self.path.startswith("/api/history"):
+            # Get upload history endpoint
+            try:
+                from urllib.parse import urlparse, parse_qs
+                parsed = urlparse(self.path)
+                limit = 20
+                if parsed.query:
+                    params = parse_qs(parsed.query)
+                    if "limit" in params:
+                        try:
+                            limit = int(params["limit"][0])
+                        except (ValueError, IndexError):
+                            limit = 20
+
+                history = session_manager.get_history(limit=limit)
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "success", "sessions": history}).encode("utf-8"))
+            except Exception as e:
+                print(f"[ERROR] History API: {e}", file=sys.stderr)
                 self.send_error(500)
         else:
             self.send_error(404)

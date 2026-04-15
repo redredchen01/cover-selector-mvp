@@ -2,6 +2,7 @@
 
 import json
 import logging
+import threading
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -23,8 +24,9 @@ class SessionManager:
             history_dir = str(Path.home() / ".cover_selector_history")
 
         self.history_dir = Path(history_dir)
-        self.history_dir.mkdir(parents=True, exist_ok=True)
+        self.history_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.sessions = {}  # In-memory session state
+        self.sessions_lock = threading.RLock()  # Thread-safe access
 
     def create_session(self, video_filename: str) -> str:
         """Create a new session for video processing."""
@@ -41,7 +43,8 @@ class SessionManager:
             "result": None,
             "error": None,
         }
-        self.sessions[session_id] = session
+        with self.sessions_lock:
+            self.sessions[session_id] = session
         return session_id
 
     def update_progress(
@@ -53,31 +56,34 @@ class SessionManager:
         processed_frames: int = 0,
     ) -> bool:
         """Update session progress."""
-        if session_id not in self.sessions:
-            return False
-        session = self.sessions[session_id]
-        session["status"] = "processing"
-        session["current_stage"] = stage
-        session["progress"] = progress
-        session["total_frames"] = total_frames
-        session["processed_frames"] = processed_frames
+        with self.sessions_lock:
+            if session_id not in self.sessions:
+                return False
+            session = self.sessions[session_id]
+            session["status"] = "processing"
+            session["current_stage"] = stage
+            session["progress"] = progress
+            session["total_frames"] = total_frames
+            session["processed_frames"] = processed_frames
         return True
 
     def complete_session(self, session_id: str, result: Dict, error: Optional[str] = None) -> bool:
         """Mark session as completed."""
-        if session_id not in self.sessions:
-            return False
-        session = self.sessions[session_id]
-        session["status"] = "failed" if error else "completed"
-        session["result"] = result
-        session["error"] = error
-        session["completed_at"] = datetime.now().isoformat()
+        with self.sessions_lock:
+            if session_id not in self.sessions:
+                return False
+            session = self.sessions[session_id]
+            session["status"] = "failed" if error else "completed"
+            session["result"] = result
+            session["error"] = error
+            session["completed_at"] = datetime.now().isoformat()
         self._save_to_history(session)
         return True
 
     def get_progress(self, session_id: str) -> Optional[Dict]:
         """Get current progress for session."""
-        return self.sessions.get(session_id)
+        with self.sessions_lock:
+            return self.sessions.get(session_id)
 
     def get_history(self, limit: int = 20) -> List[Dict]:
         """Get upload history."""
@@ -87,6 +93,13 @@ class SessionManager:
         )[:limit]
         for history_file in history_files:
             try:
+                # Security: prevent symlink/TOCTOU attacks
+                if history_file.is_symlink():
+                    logger.warning(f"Skipping symlink: {history_file}")
+                    continue
+                if history_file.parent != self.history_dir:
+                    logger.warning(f"Skipping file outside history dir: {history_file}")
+                    continue
                 with open(history_file, "r") as f:
                     entry = json.load(f)
                     history.append(entry)

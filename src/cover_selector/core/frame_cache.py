@@ -17,7 +17,7 @@ class FrameCache:
         if cache_dir is None:
             cache_dir = str(Path.home() / ".cover_selector_cache")
         self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.stats = {"hits": 0, "misses": 0, "writes": 0, "errors": 0}
 
     def _frame_hash(self, frame_bytes: bytes) -> str:
