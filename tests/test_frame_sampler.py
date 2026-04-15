@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -71,6 +71,7 @@ def test_sample_frames_multiple_scenes(sampler):
         ]
 
         with patch.object(sampler, "_extract_frame_ffmpeg") as mock_extract:
+
             def create_frame(*args, **kwargs):
                 args[2].parent.mkdir(parents=True, exist_ok=True)
                 args[2].touch()
@@ -115,6 +116,7 @@ def test_sample_frame_timestamps(sampler):
         scene = Scene(id=0, start_sec=0.0, end_sec=10.0)
 
         with patch.object(sampler, "_extract_frame_ffmpeg") as mock_extract:
+
             def create_frame(*args, **kwargs):
                 args[2].parent.mkdir(parents=True, exist_ok=True)
                 args[2].touch()
@@ -141,6 +143,7 @@ def test_sample_frame_paths(sampler):
         scene = Scene(id=0, start_sec=0.0, end_sec=5.0)
 
         with patch.object(sampler, "_extract_frame_ffmpeg") as mock_extract:
+
             def create_frame(*args, **kwargs):
                 args[2].parent.mkdir(parents=True, exist_ok=True)
                 args[2].touch()

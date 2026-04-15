@@ -79,7 +79,14 @@ class Deduper:
             - is_duplicate: Whether frame is a duplicate (not group representative)
         """
         if not self.config.dedup_enabled or len(frames) == 0:
-            return {f.frame_id: {"duplicate_group_id": None, "duplicate_similarity_score": 0.0, "is_duplicate": False} for f in frames}
+            return {
+                f.frame_id: {
+                    "duplicate_group_id": None,
+                    "duplicate_similarity_score": 0.0,
+                    "is_duplicate": False,
+                }
+                for f in frames
+            }
 
         # Compute hashes for all frames
         hashes: Dict[int, str] = {}
@@ -135,11 +142,12 @@ class Deduper:
 
         # Mark duplicate frames
         for group_id, group_frames in groups.items():
+            # Guard against empty groups
+            if not group_frames:
+                logger.warning(f"Deduplication group {group_id} is empty, skipping")
+                continue
             # Find highest-scoring frame in group
-            best_frame_id = max(
-                group_frames,
-                key=lambda fid: scores.get(fid, 0.0)
-            )
+            best_frame_id = max(group_frames, key=lambda fid: scores.get(fid, 0.0))
 
             # Mark all frames in group
             for frame_id in group_frames:

@@ -11,9 +11,7 @@ class RankingResult(BaseModel):
     rank: Optional[int] = Field(None, ge=1, description="Rank if selected (1-indexed)")
     frame_id: int = Field(..., description="Frame identifier")
     final_score: float = Field(0.0, ge=0, le=100, description="Final weighted score")
-    confidence_score: float = Field(
-        0.0, ge=0, le=100, description="Confidence in this score"
-    )
+    confidence_score: float = Field(0.0, ge=0, le=100, description="Confidence in this score")
     status: str = Field(
         "rejected",
         description="Status: normal, duplicate, rejected, borderline",

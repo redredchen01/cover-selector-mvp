@@ -1,15 +1,15 @@
 """P6: Performance benchmark tests"""
 
-import time
-import sys
 import json
+import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from cover_selector.config import CoverSelectorConfig
-from cover_selector.core.complete_pipeline import VideoToTripleCollagePipeline
 from cover_selector.core.analyzer_cache import clear_cache
+from cover_selector.core.complete_pipeline import VideoToTripleCollagePipeline
 
 
 class PerformanceBenchmark:
@@ -105,8 +105,9 @@ class PerformanceBenchmark:
     @staticmethod
     def test_memory_footprint():
         """Test memory usage"""
-        import psutil
         import os
+
+        import psutil
 
         test_video = Path("/tmp/test_video_large.mp4")
         if not test_video.exists():
@@ -131,7 +132,9 @@ class PerformanceBenchmark:
 
         print(f"  初始内存: {initial_mem:.1f} MB")
         print(f"  峰值内存: {peak_mem:.1f} MB")
-        print(f"  内存增长: {memory_increase:.1f} MB ({(memory_increase / initial_mem * 100):.1f}%)")
+        print(
+            f"  内存增长: {memory_increase:.1f} MB ({(memory_increase / initial_mem * 100):.1f}%)"
+        )
 
         # 内存目标检查
         if memory_increase < 100:
@@ -172,6 +175,7 @@ def run_performance_tests():
     except Exception as e:
         print(f"\n❌ 性能测试失败: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -183,5 +187,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ 错误：{e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

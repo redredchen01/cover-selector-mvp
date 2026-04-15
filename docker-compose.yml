@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  cover-selector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      WORKERS: 4
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./uploads:/tmp/uploads:rw
+      - ./cache:/tmp/cache:rw
+      - ./history:/tmp/history:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - cover-selector-net
+
+  # Optional: nginx reverse proxy for production-like environment
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - cover-selector
+    networks:
+      - cover-selector-net
+    restart: unless-stopped
+    profiles:
+      - with-nginx
+
+networks:
+  cover-selector-net:
+    driver: bridge

@@ -200,7 +200,7 @@ class Ranker:
             std_dev = 0.0
         else:
             variance = sum((x - mean) ** 2 for x in scores) / (len(scores) - 1)
-            std_dev = variance ** 0.5
+            std_dev = variance**0.5
 
         # Confidence based on consistency
         # std_dev < 10: high confidence (80-100)
@@ -233,15 +233,11 @@ class Ranker:
             borderline_frames.append((frame, severity, violations))
 
         # Sort by severity (ascending) and score (descending)
-        borderline_frames.sort(
-            key=lambda x: (x[1], -scores_dict[x[0].frame_id]["final_score"])
-        )
+        borderline_frames.sort(key=lambda x: (x[1], -scores_dict[x[0].frame_id]["final_score"]))
 
         # Create results for top 3
         results = []
-        for rank, (frame, severity, violations) in enumerate(
-            borderline_frames[:3], 1
-        ):
+        for rank, (frame, severity, violations) in enumerate(borderline_frames[:3], 1):
             score_data = scores_dict[frame.frame_id]
             original_confidence = self._calculate_confidence(score_data)
 
@@ -259,9 +255,7 @@ class Ranker:
 
         return results
 
-    def _calculate_violation_severity(
-        self, frame: FrameFeatures, violations: List[str]
-    ) -> float:
+    def _calculate_violation_severity(self, frame: FrameFeatures, violations: List[str]) -> float:
         """
         Calculate severity score for violations.
 

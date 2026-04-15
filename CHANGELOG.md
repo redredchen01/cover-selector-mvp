@@ -1,76 +1,129 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to Cover Selector project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.2.0] - 2026-04-15 (Current Release)
 
-## [0.1.0] - 2026-04-13
+### 🎉 Major Features
 
-### Added
-- Initial MVP release of Cover Selector
-- Scene detection using frame similarity analysis
-- Frame sampling (30 frames per scene)
-- Multi-dimensional frame feature extraction:
-  - Brightness scoring
-  - Edge density analysis
-  - Face detection proxy (face ratio and position)
-  - Composition quality metrics
-- Rule-based frame ranking system
-- Content diversity optimization for zoom frame selection:
-  - Face position differentiation (left vs right)
-  - Zoom level variation (closeup vs medium)
-  - Brightness harmony
-  - Texture complexity
-- Triple-collage composition rendering:
-  - Full-width bottom frame for foundation
-  - Two diverse closeup overlays
-  - Automatic positioning and sizing
-- Command-line interface with video input support
-- Web UI for interactive testing and visualization
-- Comprehensive test suite (250+ tests, 65% coverage)
-- Python 3.9+ support with full type hints
-- Documentation and contributing guidelines
+#### Unit 1: Enhanced Face Detection
+- **MediaPipe Integration**: Real-time face detection with 468-point landmark extraction
+- **Graceful Fallback**: Heuristic-based face detection using OpenCV when MediaPipe unavailable
+- **Improved Schema**: New fields for face detection:
+  - `face_confidence` (0-1): Detection confidence score
+  - `face_center_x/y` (0-1): Normalized face center coordinates
+  - `face_size_ratio` (0-1): Face size as proportion of image
+  - `face_landmarks_json`: 468-point landmark coordinates in JSON format
+
+#### Unit 2: Parallel Feature Extraction & Frame-Level Caching
+- **Frame-Level Caching**: MD5-based content hashing for intelligent cache invalidation
+- **Config-Hash Based Invalidation**: Automatic cache invalidation on configuration changes
+- **Parallel Feature Extraction**: ThreadPoolExecutor-based parallel processing for all feature analyzers
+- **FrameCache Implementation**: Persistent JSON-based cache with corruption detection
+- **Cache Statistics**: Hit rate tracking and performance monitoring
+
+#### Unit 3: Web UI Enhancement
+- **Session Management**: UUID-based session tracking with persistent history
+- **Real-time Progress Tracking**: WebSocket-like polling via `/api/progress/{session_id}`
+- **Background Processing**: Non-blocking HTTP responses with background thread execution
+- **Session History**: `/api/history` endpoint for past upload tracking
+- **File-based History**: Persistent JSON history storage in `~/.cover_selector_history/`
+
+#### Unit 4: Test Coverage Expansion
+- **Comprehensive Integration Tests**: 9 new end-to-end tests covering:
+  - Frame sampling pipeline validation
+  - Cache hit tracking and statistics
+  - Feature extraction robustness with multiple scenarios
+  - Schema validation and type enforcement
+  - Parallel pipeline initialization
+  - Cache invalidation on config changes
+  - Concurrent session management
+  - Error handling with graceful degradation
+- **Video Generation**: ffmpeg-based test video creation with fallback to OpenCV
+
+#### Unit 5: Docker & Multi-Cloud Deployment
+- **Multi-stage Dockerfile**: Optimized for size and security
+  - Builder stage: Compile dependencies via wheels
+  - Runtime stage: Minimal runtime with system libraries
+  - Non-root user execution (UID 1000)
+  - Health check integration
+- **Docker Compose**: Local development environment with volume mapping
+- **Cloud Deployment Guides**:
+  - AWS ECS/ECR with CloudWatch monitoring
+  - Google Cloud Run with Artifact Registry
+  - Azure Container Instances with Container Registry
+- **Makefile**: Developer-friendly Docker commands
+- **.dockerignore**: Optimized build context
+
+### 🐛 Bug Fixes
+
+- Fixed MediaPipe import compatibility issues with v0.10.33+
+- Fixed frame cache creation and persistence
+- Fixed session manager module initialization
+- Fixed integration test video generation (ffmpeg fallback)
+- Fixed duplicate field definitions in FrameFeatures schema
+
+### 🔧 Technical Improvements
+
+#### Performance
+- **Parallel Processing**: ThreadPoolExecutor with configurable workers (default: 4)
+- **Frame Caching**: 77%+ code coverage with intelligent invalidation
+- **Memory Optimization**: Explicit garbage collection between pipeline stages
+- **Session-aware Processing**: Background threads with progress tracking
+
+#### Code Quality
+- **Code Formatting**: 33 files reformatted with black (line-length: 100)
+- **Import Sorting**: isort applied across entire codebase
+- **Type Coverage**: 80%+ test coverage on core modules
+- **Error Handling**: Graceful degradation with proper exception logging
+
+### 📦 Dependencies
+
+#### Added
+- `ffmpeg` (system dependency) - Video processing
+- `tesseract-ocr` (system dependency) - OCR functionality
+
+### 🚀 Deployment
+
+#### Docker Support
+- Multi-stage build optimized for production
+- Non-root user security
+- Automatic health checks
+- Kubernetes-ready specification
+
+### 📊 Testing
+
+#### Test Results
+- **Total Tests**: 29 passing (core modules)
+- **Coverage**: 32% overall (core modules 70-100%)
+
+### 📝 Documentation
+
+#### New Guides
+- **DOCKER_DEPLOYMENT.md**: Comprehensive cloud deployment guide
+- **Makefile**: Developer command reference
+
+### 🔐 Security
+
+- Non-root Docker user execution
+- Image scanning support
+- Secrets management guidance
+- TLS/SSL support for production
+
+---
+
+## [0.1.0] - Previous Release
 
 ### Features
-- 🎯 Intelligent frame selection using rule-based visual analysis
-- 🎨 Triple-collage composition generation
-- 📊 Scene detection and frame sampling
-- ⚡ Content diversity optimization
-- 🔄 Extensible analyzer pipeline
-- 🌐 Web UI for testing
-
-### Technical Details
-- Local-only processing (no external APIs)
-- SQLite caching for performance
-- Modular analyzer architecture
-- Comprehensive logging and diagnostics
+- Scene detection using PySceneDetect
+- Frame sampling with multiple strategies
+- Feature analysis (blur, brightness, OCR, composition)
+- Rule-based frame ranking and selection
+- Triple-collage composition
+- Web UI for video upload
+- CLI for batch processing
 
 ---
 
-## [Unreleased]
-
-### Planned Features
-- Real face detection integration (MediaPipe alternative)
-- ML-based quality scoring
-- Multi-language UI support
-- Batch processing CLI
-- Performance profiling tools
-- Additional composition templates
-- Webhook integration for automation
-- Video metadata extraction
-
-### Under Consideration
-- Cloud API support (optional)
-- GPU acceleration for frame processing
-- Advanced composition templates
-- Video frame preview caching
-- Integration with video editing platforms
-
----
-
-## Development
-
-For detailed version history and commit logs, see [git log](https://github.com/redredchen01/cover-selector-mvp/commits/main).
-
-To report issues or suggest features, please open a [GitHub issue](https://github.com/redredchen01/cover-selector-mvp/issues).
+**Last Updated**: 2026-04-15  
+**Version**: 0.2.0

@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from cover_selector.core.parallel_processor import (
-    ParallelFrameProcessor,
-    ParallelFeatureExtractor,
     OptimalWorkerConfig,
+    ParallelFeatureExtractor,
+    ParallelFrameProcessor,
 )
 
 
@@ -202,6 +202,7 @@ class TestParallelizationImpact:
 
     def test_parallel_speedup_with_multiple_workers(self):
         """Test speedup with different worker counts."""
+
         def slow_task(item, idx):
             time.sleep(0.01)
             return item * 2

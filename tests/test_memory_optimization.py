@@ -228,4 +228,6 @@ class TestMemoryOptimizationIntegration:
         assert stream_processor.frame_buffer[-1] == 18  # Last result (9*2)
 
         print(f"\n✓ Combined batch + streaming processing successful")
-        print(f"  Processed {len(results)} items with only {len(stream_processor.frame_buffer)} in memory")
+        print(
+            f"  Processed {len(results)} items with only {len(stream_processor.frame_buffer)} in memory"
+        )

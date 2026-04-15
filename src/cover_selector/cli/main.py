@@ -37,6 +37,7 @@ def run_preflight_checks() -> None:
     # Check MediaPipe import
     try:
         import mediapipe
+
         console.print(f"[green]✓[/green] MediaPipe v{mediapipe.__version__} installed")
     except ImportError:
         missing.append("MediaPipe")
@@ -66,7 +67,9 @@ def check_disk_space(output_path: Path, video_path: Path) -> None:
     free_mb = psutil.disk_usage(output_path).free / (1024 * 1024)
 
     if free_mb < required_mb:
-        console.print(f"[yellow]⚠ Low disk space:[/yellow] {free_mb:.0f}MB free, ~{required_mb:.0f}MB needed")
+        console.print(
+            f"[yellow]⚠ Low disk space:[/yellow] {free_mb:.0f}MB free, ~{required_mb:.0f}MB needed"
+        )
     else:
         console.print(f"[green]✓[/green] Disk space: {free_mb:.0f}MB available")
 
@@ -122,7 +125,7 @@ def main(
             console.print(f"[red]Error: Video file not found: {input}[/red]")
             sys.exit(1)
 
-        if input.suffix.lower() not in ['.mp4', '.webm', '.mkv', '.mov', '.avi', '.flv', '.m4v']:
+        if input.suffix.lower() not in [".mp4", ".webm", ".mkv", ".mov", ".avi", ".flv", ".m4v"]:
             console.print(f"[yellow]Warning: Unusual video format: {input.suffix}[/yellow]")
 
         # Check disk space
@@ -197,6 +200,7 @@ def main(
         console.print(f"\n[red]Error: {e}[/red]")
         if profile:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 

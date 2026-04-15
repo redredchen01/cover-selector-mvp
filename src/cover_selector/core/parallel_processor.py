@@ -2,8 +2,8 @@
 
 import logging
 import multiprocessing
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from typing import List, Callable, Any, Optional
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from typing import Any, Callable, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +24,7 @@ class ParallelFrameProcessor:
         self.num_workers = num_workers
         logger.info(f"Initialized parallel processor with {num_workers} workers")
 
-    def process_frames_parallel(
-        self, frames: List[Any], processor_func: Callable
-    ) -> List[Any]:
+    def process_frames_parallel(self, frames: List[Any], processor_func: Callable) -> List[Any]:
         """
         Process frames in parallel using ThreadPoolExecutor.
 
@@ -42,8 +40,7 @@ class ParallelFrameProcessor:
         with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
             # Submit all tasks
             futures = {
-                executor.submit(processor_func, frame, idx): idx
-                for idx, frame in enumerate(frames)
+                executor.submit(processor_func, frame, idx): idx for idx, frame in enumerate(frames)
             }
 
             # Collect results as they complete
@@ -80,9 +77,7 @@ class ParallelFrameProcessor:
 
         with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
             # Submit all batch tasks
-            futures = [
-                executor.submit(batch_processor_func, batch) for batch in batches
-            ]
+            futures = [executor.submit(batch_processor_func, batch) for batch in batches]
 
             # Collect results
             for future in futures:
@@ -107,9 +102,7 @@ class ParallelFeatureExtractor:
         """
         self.processor = ParallelFrameProcessor(num_workers)
 
-    def extract_features_parallel(
-        self, frames: List[Any], feature_func: Callable
-    ) -> List[dict]:
+    def extract_features_parallel(self, frames: List[Any], feature_func: Callable) -> List[dict]:
         """
         Extract features from multiple frames in parallel.
 
@@ -126,9 +119,7 @@ class ParallelFeatureExtractor:
 
         # Filter out None results (failed processing)
         valid_features = [f for f in features if f is not None]
-        logger.info(
-            f"Successfully extracted {len(valid_features)}/{len(frames)} feature sets"
-        )
+        logger.info(f"Successfully extracted {len(valid_features)}/{len(frames)} feature sets")
 
         return valid_features
 
@@ -162,9 +153,7 @@ class OptimalWorkerConfig:
             return cpu_count
 
     @staticmethod
-    def get_optimal_batch_size(
-        total_items: int, workers: int, base_batch_size: int = 5
-    ) -> int:
+    def get_optimal_batch_size(total_items: int, workers: int, base_batch_size: int = 5) -> int:
         """
         Calculate optimal batch size for parallel processing.
 
@@ -178,7 +167,5 @@ class OptimalWorkerConfig:
         """
         # Ensure each worker gets at least a few batches to distribute work
         optimal = max(base_batch_size, total_items // (workers * 4))
-        logger.debug(
-            f"Optimal batch size: {optimal} (items={total_items}, workers={workers})"
-        )
+        logger.debug(f"Optimal batch size: {optimal} (items={total_items}, workers={workers})")
         return optimal

@@ -2,16 +2,16 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from cover_selector.config import CoverSelectorConfig
 from cover_selector.core.complete_pipeline import VideoToTripleCollagePipeline
-from cover_selector.schemas.scene import Scene
 from cover_selector.schemas.candidate_frame import CandidateFrame
 from cover_selector.schemas.frame_features import FrameFeatures
 from cover_selector.schemas.ranking_result import RankingResult
+from cover_selector.schemas.scene import Scene
 
 
 @pytest.fixture
@@ -84,16 +84,18 @@ def test_pipeline_run_with_mocked_stages(pipeline):
         output_dir.mkdir()
 
         # Mock each stage
-        with patch.object(pipeline.scene_detector, 'detect') as mock_detect, \
-             patch.object(pipeline.frame_sampler, 'sample_frames') as mock_sample, \
-             patch.object(pipeline.scorer, 'score') as mock_score, \
-             patch.object(pipeline.ranker, 'rank') as mock_rank, \
-             patch.object(pipeline.composer_analyzer, 'compose') as mock_compose, \
-             patch.object(pipeline.image_compositor, 'compose') as mock_compositor, \
-             patch.object(pipeline.report_builder, 'build_report') as mock_build_report, \
-             patch.object(pipeline.report_builder, 'save_report') as mock_save_report, \
-             patch.object(pipeline, '_extract_frames') as mock_extract, \
-             patch.object(pipeline, '_get_video_duration') as mock_duration:
+        with (
+            patch.object(pipeline.scene_detector, "detect") as mock_detect,
+            patch.object(pipeline.frame_sampler, "sample_frames") as mock_sample,
+            patch.object(pipeline.scorer, "score") as mock_score,
+            patch.object(pipeline.ranker, "rank") as mock_rank,
+            patch.object(pipeline.composer_analyzer, "compose") as mock_compose,
+            patch.object(pipeline.image_compositor, "compose") as mock_compositor,
+            patch.object(pipeline.report_builder, "build_report") as mock_build_report,
+            patch.object(pipeline.report_builder, "save_report") as mock_save_report,
+            patch.object(pipeline, "_extract_frames") as mock_extract,
+            patch.object(pipeline, "_get_video_duration") as mock_duration,
+        ):
 
             # Setup mock returns
             mock_detect.return_value = [
@@ -115,7 +117,12 @@ def test_pipeline_run_with_mocked_stages(pipeline):
             mock_score.return_value = MagicMock(final_score=0.8)
 
             ranking_results = [
-                RankingResult(frame_id=i, status="accepted", final_score=0.8 - i*0.05, final_score_breakdown={})
+                RankingResult(
+                    frame_id=i,
+                    status="accepted",
+                    final_score=0.8 - i * 0.05,
+                    final_score_breakdown={},
+                )
                 for i in range(3)
             ]
             mock_rank.return_value = (ranking_results, {})
@@ -173,12 +180,14 @@ def test_pipeline_run_degraded_mode(pipeline):
         output_dir.mkdir()
 
         # Mock stages - only 1 valid frame for degraded mode
-        with patch.object(pipeline.scene_detector, 'detect') as mock_detect, \
-             patch.object(pipeline.frame_sampler, 'sample_frames') as mock_sample, \
-             patch.object(pipeline.scorer, 'score') as mock_score, \
-             patch.object(pipeline.ranker, 'rank') as mock_rank, \
-             patch.object(pipeline.composer_analyzer, 'compose') as mock_compose, \
-             patch.object(pipeline.image_compositor, 'compose') as mock_compositor:
+        with (
+            patch.object(pipeline.scene_detector, "detect") as mock_detect,
+            patch.object(pipeline.frame_sampler, "sample_frames") as mock_sample,
+            patch.object(pipeline.scorer, "score") as mock_score,
+            patch.object(pipeline.ranker, "rank") as mock_rank,
+            patch.object(pipeline.composer_analyzer, "compose") as mock_compose,
+            patch.object(pipeline.image_compositor, "compose") as mock_compositor,
+        ):
 
             mock_detect.return_value = [Scene(id=0, start_sec=0.0, end_sec=10.0)]
 
@@ -196,14 +205,18 @@ def test_pipeline_run_degraded_mode(pipeline):
             mock_score.return_value = MagicMock(final_score=0.8)
 
             ranking_results = [
-                RankingResult(frame_id=0, status="accepted", final_score=0.8, final_score_breakdown={})
+                RankingResult(
+                    frame_id=0, status="accepted", final_score=0.8, final_score_breakdown={}
+                )
             ]
             mock_rank.return_value = (ranking_results, {})
 
             # Mock degraded composition
             mock_compose_result = MagicMock()
             mock_compose_result.is_degraded = True
-            mock_compose_result.degradation_reason = "Insufficient frames for triple-collage (1 < 3)"
+            mock_compose_result.degradation_reason = (
+                "Insufficient frames for triple-collage (1 < 3)"
+            )
             mock_compose_result.bottom_image = create_mock_frame_features(0, 0.0)
             mock_compose_result.zoom_images = []
             mock_compose.return_value = mock_compose_result
@@ -226,7 +239,7 @@ def test_pipeline_get_video_duration(pipeline):
         video_path = Path(tmpdir) / "test.mp4"
         video_path.touch()
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(stdout="123.45")
 
             duration = pipeline._get_video_duration(str(video_path))
@@ -241,7 +254,7 @@ def test_pipeline_get_video_duration_error(pipeline):
         video_path = Path(tmpdir) / "test.mp4"
         video_path.touch()
 
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.side_effect = Exception("FFprobe failed")
 
             duration = pipeline._get_video_duration(str(video_path))

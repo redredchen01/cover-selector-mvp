@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -86,9 +86,7 @@ class TestMemoryOptimizationIntegration:
         processor = BatchProcessor(batch_size=config.scorer.batch_size)
 
         # Create test frames
-        test_frames = [
-            {"id": i, "timestamp": float(i)} for i in range(20)
-        ]
+        test_frames = [{"id": i, "timestamp": float(i)} for i in range(20)]
 
         def analyze_batch(batch):
             return [{"id": f["id"], "score": f["id"] * 1.5} for f in batch]

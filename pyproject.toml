@@ -27,6 +27,13 @@ classifiers = [
     "Topic :: Multimedia :: Video",
     "Topic :: Multimedia :: Graphics",
 ]
+
+[project.urls]
+Homepage = "https://github.com/redredchen01/cover-selector-mvp"
+Repository = "https://github.com/redredchen01/cover-selector-mvp.git"
+Issues = "https://github.com/redredchen01/cover-selector-mvp/issues"
+Documentation = "https://github.com/redredchen01/cover-selector-mvp#readme"
+
 dependencies = [
     "typer[all]>=0.9.0",
     "pydantic>=2.0",
@@ -38,12 +45,6 @@ dependencies = [
     "psutil>=5.9.0",
     "rich>=13.0.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/redredchen01/cover-selector-mvp"
-Repository = "https://github.com/redredchen01/cover-selector-mvp.git"
-Issues = "https://github.com/redredchen01/cover-selector-mvp/issues"
-Documentation = "https://github.com/redredchen01/cover-selector-mvp#readme"
 
 [project.optional-dependencies]
 dev = [

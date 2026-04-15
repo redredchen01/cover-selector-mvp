@@ -11,9 +11,10 @@ from typing import Dict, List, Tuple
 logger = logging.getLogger(__name__)
 
 from cover_selector.config import CoverSelectorConfig
-from cover_selector.core.analyzer_cache import get_analyzer, clear_cache
+from cover_selector.core.analyzer_cache import clear_cache, get_analyzer
 from cover_selector.core.composer_analyzer import ComposerAnalyzer
 from cover_selector.core.composition_report_builder import CompositionReportBuilder
+from cover_selector.core.frame_cache import FrameCache
 from cover_selector.core.frame_sampler import FrameSampler
 from cover_selector.core.image_compositor import ImageCompositor
 from cover_selector.core.ranker import Ranker
@@ -42,6 +43,7 @@ class ParallelVideoToTripleCollagePipeline:
         self.composer_analyzer = get_analyzer(ComposerAnalyzer, config.composition_analysis)
         self.image_compositor = None
         self.report_builder = CompositionReportBuilder()
+        self.frame_cache = FrameCache()
 
     def _extract_single_feature(self, candidate_frame) -> Tuple:
         """Extract features for a single candidate frame (worker function for threading)."""
@@ -78,7 +80,9 @@ class ParallelVideoToTripleCollagePipeline:
             score_result = self.scorer.score(features)
             return (candidate_frame.frame_id, features, score_result)
         except Exception as e:
-            logger.warning(f"  ⚠️ Failed to extract features for frame {candidate_frame.frame_id}: {e}")
+            logger.warning(
+                f"  ⚠️ Failed to extract features for frame {candidate_frame.frame_id}: {e}"
+            )
             raise
 
     def run(self, video_path: str, output_dir: Path) -> Dict:
@@ -107,7 +111,9 @@ class ParallelVideoToTripleCollagePipeline:
         logger.info(f"  ✓ Sampled {len(candidate_frames)} candidates")
 
         # P5: Parallel feature extraction
-        logger.info(f"📍 Stage 3: Parallel Feature Extraction & Scoring ({self.max_workers} workers)...")
+        logger.info(
+            f"📍 Stage 3: Parallel Feature Extraction & Scoring ({self.max_workers} workers)..."
+        )
         features_list = []
         scores_dict = {}
 
@@ -128,7 +134,9 @@ class ParallelVideoToTripleCollagePipeline:
                         scores_dict[frame_id] = score_result
                         completed += 1
                         if completed % max(1, len(candidate_frames) // 4) == 0:
-                            logger.info(f"  ✓ Extracted features for {completed}/{len(candidate_frames)} frames")
+                            logger.info(
+                                f"  ✓ Extracted features for {completed}/{len(candidate_frames)} frames"
+                            )
                     except Exception as e:
                         logger.warning(f"  ⚠️ Failed to process frame: {e}")
 
@@ -267,6 +275,8 @@ class ParallelVideoToTripleCollagePipeline:
             return 0.0
 
 
-def create_parallel_pipeline(config: CoverSelectorConfig, max_workers: int = 4) -> ParallelVideoToTripleCollagePipeline:
+def create_parallel_pipeline(
+    config: CoverSelectorConfig, max_workers: int = 4
+) -> ParallelVideoToTripleCollagePipeline:
     """Factory function for parallel pipeline."""
     return ParallelVideoToTripleCollagePipeline(config, max_workers)

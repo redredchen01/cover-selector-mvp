@@ -109,5 +109,7 @@ def test_score_components_sum_correctly(scorer):
 
     # Verify final_score includes all components
     assert "score_breakdown" in result
-    assert all(k in result["score_breakdown"] for k in
-               ["clarity", "cleanliness", "subject_presence", "composition", "cover_suitability"])
+    assert all(
+        k in result["score_breakdown"]
+        for k in ["clarity", "cleanliness", "subject_presence", "composition", "cover_suitability"]
+    )

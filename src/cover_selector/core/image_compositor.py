@@ -57,9 +57,9 @@ class ImageCompositor:
         """
         try:
             # Load and convert images to RGB
-            bottom = Image.open(bottom_path).convert('RGB')
-            zoom1 = Image.open(zoom1_path).convert('RGB')
-            zoom2 = Image.open(zoom2_path).convert('RGB')
+            bottom = Image.open(bottom_path).convert("RGB")
+            zoom1 = Image.open(zoom1_path).convert("RGB")
+            zoom2 = Image.open(zoom2_path).convert("RGB")
         except Exception as e:
             logger.error(f"Failed to load images: {e}")
             raise
@@ -102,7 +102,7 @@ class ImageCompositor:
         Create a circular frame from image with transparent background.
 
         Returns RGBA image where circle is opaque and outside is transparent.
-        Crops to square (preserving aspect ratio) instead of stretching.
+        This allows proper overlay with alpha blending - no white background.
 
         Args:
             image: Input image
@@ -111,46 +111,24 @@ class ImageCompositor:
         Returns:
             RGBA Image with circular frame (circle opaque, outside transparent)
         """
-        # First, crop image to square while preserving aspect ratio
-        width, height = image.size
-
-        if width != height:
-            # Crop to square: use the smaller dimension
-            min_dim = min(width, height)
-
-            if width > height:
-                # Image is wider: crop left and right
-                left = (width - min_dim) // 2
-                top = 0
-                right = left + min_dim
-                bottom = min_dim
-            else:
-                # Image is taller: crop top and bottom, keep center
-                left = 0
-                top = (height - min_dim) // 2
-                right = min_dim
-                bottom = top + min_dim
-
-            img_cropped = image.crop((left, top, right, bottom))
-        else:
-            img_cropped = image
-
-        # Now resize the square image to the target size
-        img_resized = img_cropped.resize((size, size), Image.Resampling.LANCZOS)
+        # Resize image to square
+        img_resized = image.resize((size, size), Image.Resampling.LANCZOS)
 
         # Create circular mask
-        mask = Image.new('L', (size, size), 0)
+        mask = Image.new("L", (size, size), 0)
         draw = ImageDraw.Draw(mask)
         draw.ellipse([0, 0, size - 1, size - 1], fill=255)
 
         # Convert to RGBA and apply circular mask
-        img_rgba = img_resized.convert('RGBA')
+        img_rgba = img_resized.convert("RGBA")
         img_rgba.putalpha(mask)
 
         # Return RGBA image with transparent background outside circle
         return img_rgba
 
-    def _save_with_metadata(self, image: Image.Image, output_path: str, exif_source: Optional[str] = None) -> None:
+    def _save_with_metadata(
+        self, image: Image.Image, output_path: str, exif_source: Optional[str] = None
+    ) -> None:
         """
         Save image as JPEG, attempting to preserve EXIF metadata.
 
@@ -176,28 +154,30 @@ class ImageCompositor:
                 except AttributeError:
                     logger.debug(f"No EXIF metadata in source image")
             except ImportError:
-                logger.warning("piexif not installed, cannot preserve EXIF metadata. "
-                             "Install with: pip install piexif")
+                logger.warning(
+                    "piexif not installed, cannot preserve EXIF metadata. "
+                    "Install with: pip install piexif"
+                )
                 if not self.output_cfg.fallback_on_exif_fail:
                     raise ValueError("EXIF preservation required but piexif unavailable")
 
         # Convert to RGB for JPEG if needed
         save_image = image
-        if image.mode in ('RGBA', 'LA', 'P'):
+        if image.mode in ("RGBA", "LA", "P"):
             # Create white background for transparency
-            save_image = Image.new('RGB', image.size, (255, 255, 255))
-            save_image.paste(image, (0, 0), image if image.mode == 'RGBA' else None)
+            save_image = Image.new("RGB", image.size, (255, 255, 255))
+            save_image.paste(image, (0, 0), image if image.mode == "RGBA" else None)
 
         # Save JPEG with optimal settings
         try:
             save_kwargs = {
-                'format': 'JPEG',
-                'quality': self.output_cfg.jpg_quality,
-                'optimize': self.output_cfg.jpg_optimize,
-                'progressive': self.output_cfg.jpg_progressive,
+                "format": "JPEG",
+                "quality": self.output_cfg.jpg_quality,
+                "optimize": self.output_cfg.jpg_optimize,
+                "progressive": self.output_cfg.jpg_progressive,
             }
             if exif_bytes:
-                save_kwargs['exif'] = exif_bytes
+                save_kwargs["exif"] = exif_bytes
             save_image.save(str(output_path), **save_kwargs)
             logger.info(f"Saved JPEG to {output_path} (quality={self.output_cfg.jpg_quality})")
         except Exception as e:
@@ -206,7 +186,7 @@ class ImageCompositor:
                 logger.warning(f"JPEG save with EXIF failed, retrying without metadata: {e}")
                 save_image.save(
                     str(output_path),
-                    'JPEG',
+                    "JPEG",
                     quality=self.output_cfg.jpg_quality,
                     optimize=self.output_cfg.jpg_optimize,
                     progressive=self.output_cfg.jpg_progressive,

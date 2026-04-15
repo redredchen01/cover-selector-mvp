@@ -1,0 +1,430 @@
+{
+  "review_metadata": {
+    "type": "Reliability & Error Handling Review",
+    "scope": "Cover Selector MVP - Web Application (app.py) and Core Pipeline",
+    "date": "2026-04-15",
+    "severity_levels": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+  },
+
+  "executive_summary": {
+    "overall_reliability": "MODERATE - Multiple single-points-of-failure and missing error recovery",
+    "key_risks": [
+      "No background thread exception handling in app.py POST /api/process",
+      "FFmpeg timeouts hardcoded (10s-30s) with minimal recovery",
+      "Session manager file I/O has no corruption recovery or retry logic",
+      "Frame cache lacks concurrent access protection (no locking)",
+      "Multipart form parser is fragile - single malformed input crashes handler",
+      "No health checks, circuit breakers, or graceful degradation strategies"
+    ],
+    "test_coverage": "Limited - No explicit error condition tests found for timeout, disk full, or network failures"
+  },
+
+  "findings": {
+    "1_background_job_handling": {
+      "severity": "CRITICAL",
+      "component": "app.py - POST /api/process endpoint",
+      "issue": "Synchronous blocking call without thread-based background processing",
+      "details": {
+        "current_state": "Pipeline.run() is called directly in POST handler (lines 347-348), blocking until completion",
+        "problem_1_no_async_exception_handling": {
+          "description": "Pipeline exceptions bubble directly to HTTP handler",
+          "code_location": "app.py lines 389-398",
+          "failure_mode": "If pipeline.run() throws exception mid-way (e.g., after stage 3 ranking completes, stage 5 fails), client receives 400 error but session state is partially updated in memory",
+          "recovery": "NONE - No cleanup, no transaction rollback, orphaned intermediate results"
+        },
+        "problem_2_no_session_transaction": {
+          "description": "create_session() is not called; web/session_manager.py is imported but never instantiated",
+          "code_location": "app.py does not use session_manager",
+          "failure_mode": "If upload succeeds but processing fails, no way to retry or track session state",
+          "impact": "No resumable uploads, no progress tracking API endpoints"
+        },
+        "problem_3_no_timeout_envelope": {
+          "description": "No global timeout wrapping the entire pipeline execution",
+          "code_location": "app.py line 347-348",
+          "failure_mode": "If pipeline hangs (ffmpeg stuck), client times out at 10 minutes (xhr.timeout=600000), but server process remains hung. Subsequent requests will be blocked.",
+          "recommendation": "Add signal.alarm() or threading.Timer to interrupt pipeline after (e.g.) 9 minutes"
+        },
+        "problem_4_temp_file_cleanup_fragile": {
+          "description": "Video temp file cleanup wrapped in bare except clause",
+          "code_location": "app.py lines 351-354",
+          "issue": "If unlink() fails silently, disk accumulates temp files (~50MB per upload)",
+          "fix": "Log cleanup failures, implement periodic cleanup script"
+        }
+      },
+      "test_coverage": "❌ No test for: exception during stage 3-5, ffmpeg hang, disk full during temp write"
+    },
+
+    "2_ffmpeg_subprocess_reliability": {
+      "severity": "HIGH",
+      "component": "complete_pipeline.py, parallel_pipeline.py, frame_sampler.py",
+      "issue": "FFmpeg subprocess calls lack robust error recovery",
+      "details": {
+        "problem_1_hardcoded_timeout": {
+          "timeout_values": {
+            "frame_extraction": "30s (complete_pipeline.py:256, parallel_pipeline.py:236)",
+            "frame_sampler": "10s (frame_sampler.py:138)",
+            "video_duration_probe": "10s (complete_pipeline.py:292)"
+          },
+          "failure_mode": "If ffmpeg hangs on seek (common with corrupted MP4 headers), subprocess.run() kills process after timeout but exception handler creates fallback image",
+          "recovery": "Fallback to black image (complete_pipeline.py:267-277) - acceptable for single frame, but no retry or user notification"
+        },
+        "problem_2_no_ffmpeg_install_check": {
+          "code_location": "Multiple files call 'ffmpeg' without pre-flight check",
+          "failure_mode": "First ffmpeg call raises FileNotFoundError → handled in frame_sampler.py:144-145 with helpful message, but in complete_pipeline.py:256 it's caught as generic CalledProcessError",
+          "inconsistency": "Different error messages for same failure across pipeline stages"
+        },
+        "problem_3_stderr_not_logged": {
+          "code_location": "complete_pipeline.py:256 uses capture_output=True but stderr discarded on success",
+          "failure_mode": "ffmpeg warnings (e.g., 'audio codec not found') are silently dropped, making debugging frame extraction issues difficult"
+        },
+        "problem_4_race_condition_frame_extraction": {
+          "code_location": "complete_pipeline.py:256, parallel_pipeline.py:236 - both use hardcoded frame_id in output filename",
+          "failure_mode": "If two requests process same video in parallel, frame extraction dir collision possible (though temp dirs mitigate)",
+          "severity": "LOW - mitigated by temporary directories"
+        }
+      },
+      "test_coverage": "❌ No test for: ffmpeg not installed, corrupted video file, ffmpeg timeout, stderr capture"
+    },
+
+    "3_frame_cache_resilience": {
+      "severity": "MEDIUM",
+      "component": "frame_cache.py",
+      "issue": "Cache operations lack durability guarantees and concurrent access protection",
+      "details": {
+        "problem_1_no_file_locking": {
+          "code_location": "frame_cache.py:32-51 (get), 53-65 (put)",
+          "failure_mode": "Two threads extract same frame hash simultaneously → both call put() → second write overwrites first, or partial JSON written to disk",
+          "impact": "Cache corruption silent, next get() loads invalid JSON, caught and deleted (frame_cache.py:44-50), but causes cache miss penalty"
+        },
+        "problem_2_disk_full_not_retried": {
+          "code_location": "frame_cache.py:57-59",
+          "failure_mode": "IOError on put() logged as warning but not retried; feature extraction skips caching, future requests re-compute",
+          "recovery": "None - feature extraction continues, but cache degrades gracefully"
+        },
+        "problem_3_corrupted_cache_file_auto_deletion": {
+          "code_location": "frame_cache.py:44-50",
+          "behavior": "JSONDecodeError triggers automatic cache file deletion",
+          "concern": "Silent recovery may hide systemic cache corruption (e.g., full disk caused partial writes across 100 files)"
+        },
+        "problem_4_stat_race_condition": {
+          "code_location": "session_manager.py:85-87 uses glob + stat in loop",
+          "failure_mode": "If history file deleted between glob() and stat().st_mtime check, raises FileNotFoundError",
+          "impact": "get_history() call crashes, blocking history UI display"
+        }
+      },
+      "test_coverage": "❌ No test for: concurrent cache access (2+ threads same frame), disk full on cache.put(), corrupted JSON file recovery"
+    },
+
+    "4_session_manager_file_io": {
+      "severity": "HIGH",
+      "component": "web/session_manager.py",
+      "issue": "File I/O operations vulnerable to permission errors, corruption, and data loss",
+      "details": {
+        "problem_1_mkdir_not_atomic": {
+          "code_location": "session_manager.py:26",
+          "failure_mode": "mkdir(parents=True, exist_ok=True) may fail on second call if parent dir deleted between checks (race condition with external process)",
+          "impact": "Session creation raises exception, request fails with 500"
+        },
+        "problem_2_save_to_history_no_atomic_write": {
+          "code_location": "session_manager.py:100-102",
+          "failure_mode": "open('w') then json.dump() - if process crashes mid-write, session JSON is corrupted",
+          "fix": "Use atomic write: write to .tmp, then rename"
+        },
+        "problem_3_no_permission_error_recovery": {
+          "code_location": "session_manager.py:104-106 catches IOError but logs only",
+          "failure_mode": "If ~/.cover_selector_history has permission 400 or parent is unwritable, all sessions silently fail to persist; client sees success but no history saved"
+        },
+        "problem_4_history_files_not_deleted": {
+          "code_location": "session_manager.py has no cleanup",
+          "failure_mode": "User's home dir accumulates 1 JSON file per request → after 1000 uploads, get_history() is O(n) with 1000 file opens",
+          "recommendation": "Implement rotation: keep only last 100 files, delete rest"
+        },
+        "problem_5_in_memory_state_not_persisted": {
+          "code_location": "session_manager.py:27 - self.sessions is dict, lost on restart",
+          "failure_mode": "If web server crashes, all session state lost; clients cannot resume uploads",
+          "impact": "Not critical for MVP but breaks upgrade path"
+        }
+      },
+      "test_coverage": "❌ No test for: permission denied on history dir, disk full on json.dump(), symlink attack, 1000+ history files"
+    },
+
+    "5_multipart_form_parsing": {
+      "severity": "HIGH",
+      "component": "app.py - do_POST() lines 289-320",
+      "issue": "Custom multipart parser is fragile, no input validation",
+      "details": {
+        "problem_1_boundary_extraction_fragile": {
+          "code_location": "app.py:301",
+          "code": "boundary = content_type.split('boundary=')[1].split(';')[0].encode()",
+          "failure_mode": [
+            "If boundary contains ' or no quotes: boundary=----ABC;charset=utf-8 splits to '----ABC;charset' (broken)",
+            "If Content-Type malformed: 'multipart/form-data; charset=utf-8' (no boundary=) raises IndexError",
+            "If boundary has trailing spaces: boundary=' ----ABC ' (with quotes) → b' ----ABC '  (double spaces in body don't match)"
+          ]
+        },
+        "problem_2_no_content_length_limit": {
+          "code_location": "app.py:292 reads entire content_length into memory",
+          "failure_mode": "Client uploads 5GB file → rfile.read(5GB) → Python consumes 5GB RAM → OOM crash",
+          "fix": "Add max upload size check (e.g., 1GB limit)"
+        },
+        "problem_3_naive_boundary_split": {
+          "code_location": "app.py:306 - body.split(b'--' + boundary)",
+          "failure_mode": "If video file contains byte sequence matching '--boundary', split produces wrong number of parts",
+          "probability": "Low for random boundary, but possible in real videos"
+        },
+        "problem_4_no_charset_handling": {
+          "code_location": "app.py:301-317",
+          "failure_mode": "If filename= contains non-UTF8 bytes, subsequent str() conversions may raise UnicodeDecodeError"
+        }
+      },
+      "test_coverage": "❌ No test for: malformed Content-Type, 5GB upload, filename with non-ASCII, video file containing boundary bytes"
+    },
+
+    "6_parallel_processing_exception_handling": {
+      "severity": "MEDIUM",
+      "component": "parallel_pipeline.py, parallel_processor.py",
+      "issue": "Thread pool exceptions caught but not always acted upon",
+      "details": {
+        "problem_1_futures_not_awaited_on_exception": {
+          "code_location": "parallel_pipeline.py:120-150",
+          "behavior": "If _extract_single_feature() raises exception in worker thread, future.result() raises exception (lines 132)",
+          "failure_mode": "Exception caught and logged (line 140-141), but worker thread was submitted with executor.submit() - thread still exists until ThreadPoolExecutor.__exit__",
+          "consequence": "If all workers crash, completed=0, no features extracted, ranking_results is empty → downstream crash in Stage 4"
+        },
+        "problem_2_fallback_sequential_can_also_crash": {
+          "code_location": "parallel_pipeline.py:144-150",
+          "failure_mode": "If parallel extraction fails, fallback to sequential (line 147-150). But _extract_single_feature() raises exception again (line 86 'raise') → pipeline aborts",
+          "consequence": "No meaningful fallback - if parallel fails, sequential also fails"
+        },
+        "problem_3_no_timeout_on_executor": {
+          "code_location": "parallel_pipeline.py:121 ThreadPoolExecutor has no timeout",
+          "failure_mode": "If one worker thread hangs on scorer.score(), other workers wait for as_completed() but hanged worker never completes → deadlock up to process death"
+        },
+        "problem_4_as_completed_doesnt_handle_all_failures": {
+          "code_location": "parallel_pipeline.py:130",
+          "issue": "as_completed() is not used (should use futures.as_completed())",
+          "actual_code": "for future in as_completed(futures): iterates futures dict keys, NOT as_completed() generator",
+          "failure_mode": "If first future hangs, loop blocks waiting for first key iteration"
+        }
+      },
+      "test_coverage": "❌ No test for: exception in worker thread, all workers crash, worker thread timeout, scorer hangs"
+    },
+
+    "7_api_error_responses": {
+      "severity": "MEDIUM",
+      "component": "app.py - GET /download, POST /api/process",
+      "issue": "Error responses inconsistent, missing input validation",
+      "details": {
+        "problem_1_download_endpoint_path_traversal": {
+          "code_location": "app.py:253-285",
+          "code": "file_path = base64.b64decode(file_path).decode('utf-8'); file_path = Path(file_path)",
+          "failure_mode": "Client sends '/download?file=L2V0Yy9wYXNzd2Q=' (base64('/etc/passwd')) → Path('/etc/passwd') → exists() returns True → file read exposed",
+          "impact": "CRITICAL - Arbitrary file disclosure vulnerability"
+        },
+        "problem_2_json_response_error_inconsistency": {
+          "code_location": "app.py - multiple endpoints",
+          "status_codes": {
+            "invalid_multipart_no_boundary": "ValueError → 400 with error JSON (line 395)",
+            "no_video_data": "ValueError → 400 with error JSON",
+            "download_file_not_found": "404 (no JSON body, line 279)",
+            "download_unknown_error": "500 (no JSON body, line 285)"
+          },
+          "consequence": "Client cannot consistently parse error responses"
+        },
+        "problem_3_no_input_validation_on_json": {
+          "code_location": "app.py:149-160",
+          "failure_mode": "xhr.responseText may be huge (10MB+ log output) → JSON.parse() hangs browser",
+          "fix": "Limit response size, ensure valid JSON shape before sending"
+        },
+        "problem_4_directory_traversal_in_multipart_filename": {
+          "code_location": "app.py:309 - filename= extracted from multipart but not validated",
+          "concern": "Not exploited in current code (filename not used), but future feature might fail"
+        }
+      },
+      "test_coverage": "❌ No test for: path traversal /download, huge error response, invalid JSON response, 404 vs 500 consistency"
+    },
+
+    "8_health_checks_and_monitoring": {
+      "severity": "LOW",
+      "component": "app.py",
+      "issue": "No health check endpoints, no metrics, no graceful shutdown",
+      "details": {
+        "problem_1_no_health_endpoint": {
+          "description": "GET / returns HTML, not { status: 'healthy' }",
+          "use_case": "Load balancer cannot health-check service before routing traffic"
+        },
+        "problem_2_no_graceful_shutdown": {
+          "code_location": "app.py:414-419",
+          "behavior": "serve_forever() blocks indefinitely; KeyboardInterrupt closes server",
+          "issue": "In-flight requests aborted without cleanup; if processing, temp files left orphaned"
+        },
+        "problem_3_no_metrics": {
+          "missing": "Request count, latency histogram, error rate, FFmpeg timeout count",
+          "consequence": "No observability into failure patterns"
+        }
+      },
+      "test_coverage": "N/A - design limitation, not a bug"
+    }
+  },
+
+  "severity_breakdown": {
+    "CRITICAL": [
+      "1. Background job exception handling - No transaction rollback, orphaned state",
+      "7. Path traversal vulnerability in /download endpoint - Arbitrary file disclosure",
+      "5. Multipart boundary extraction - IndexError on malformed Content-Type"
+    ],
+    "HIGH": [
+      "2. FFmpeg subprocess reliability - Hardcoded timeouts, no install check",
+      "4. Session manager file I/O - No atomic writes, permission errors silent",
+      "5. No Content-Length limit - 5GB upload causes OOM"
+    ],
+    "MEDIUM": [
+      "3. Frame cache - No locking, concurrent access corruption",
+      "6. Parallel processing - Fallback sequential also raises exception",
+      "7. API error response inconsistency - 404 vs 500 JSON format"
+    ]
+  },
+
+  "recommendations_by_priority": {
+    "P0_immediate": [
+      {
+        "title": "Fix path traversal in /download endpoint",
+        "effort": "15 min",
+        "code_location": "app.py:253-285",
+        "solution": "Use Path(output_dir) / file_path.name to prevent directory traversal; validate file_path is within output_dir",
+        "test": "assert not is_path_traversal('/etc/passwd')"
+      },
+      {
+        "title": "Add Content-Length limit to multipart parser",
+        "effort": "10 min",
+        "code_location": "app.py:292",
+        "solution": "if content_length > MAX_UPLOAD_SIZE: raise ValueError('File too large'); MAX_UPLOAD_SIZE = 1 * 1024**3",
+        "test": "test_upload_exceeds_1gb()"
+      },
+      {
+        "title": "Validate Content-Type boundary extraction",
+        "effort": "20 min",
+        "code_location": "app.py:298-301",
+        "solution": "Use email.message.EmailMessage or multipart library instead of string split",
+        "test": "test_malformed_content_type_no_boundary()"
+      }
+    ],
+    "P1_high_impact": [
+      {
+        "title": "Add async background job handling with exception wrapper",
+        "effort": "1-2 hours",
+        "code_location": "app.py:336-348",
+        "solution": "Wrap pipeline.run() in try-except, implement session state machine (created → processing → completed/failed), add timeout envelope with signal.alarm()",
+        "test": "test_pipeline_exception_mid_stage_cleanup()"
+      },
+      {
+        "title": "Add FFmpeg install pre-flight check",
+        "effort": "30 min",
+        "code_location": "complete_pipeline.py:45, parallel_pipeline.py:88",
+        "solution": "Add validate_ffmpeg() in __init__, raise ValueError if not found with installation instructions",
+        "test": "test_ffmpeg_not_installed_early_error()"
+      },
+      {
+        "title": "Implement atomic writes for session manager",
+        "effort": "30 min",
+        "code_location": "session_manager.py:97-106",
+        "solution": "Write to .tmp file, then rename atomically (os.rename)",
+        "test": "test_session_persistence_after_crash()"
+      },
+      {
+        "title": "Add file locking to frame cache",
+        "effort": "45 min",
+        "code_location": "frame_cache.py:53-65",
+        "solution": "Use fcntl.flock() on Linux / msvcrt.locking() on Windows, or use fasteners.InterProcessLock",
+        "test": "test_concurrent_cache_access_no_corruption()"
+      }
+    ],
+    "P2_medium_impact": [
+      {
+        "title": "Fix parallel pipeline exception fallback",
+        "effort": "30 min",
+        "code_location": "parallel_pipeline.py:144-150",
+        "solution": "Make _extract_single_feature() return (None, None, None) on exception instead of raising; let fallback continue",
+        "test": "test_parallel_extraction_partial_failure_continues()"
+      },
+      {
+        "title": "Log FFmpeg stderr for debugging",
+        "effort": "15 min",
+        "code_location": "complete_pipeline.py:256",
+        "solution": "Capture stderr, log it (not just check return code)",
+        "test": "assert 'stream not found' in logs when running on corrupted video"
+      },
+      {
+        "title": "Add health check endpoint GET /health",
+        "effort": "20 min",
+        "code_location": "app.py:224-230",
+        "solution": "Return { status: 'healthy', version: '0.2.0', dependencies: { ffmpeg: true } }",
+        "test": "test_health_check_returns_json()"
+      },
+      {
+        "title": "Implement session history cleanup (rotation)",
+        "effort": "30 min",
+        "code_location": "session_manager.py:82-95",
+        "solution": "Keep last 100 sessions, delete older ones; add .get_history(limit=20, auto_cleanup=True)",
+        "test": "test_history_cleanup_removes_old_sessions()"
+      }
+    ],
+    "P3_nice_to_have": [
+      {
+        "title": "Add circuit breaker for FFmpeg failures",
+        "effort": "1 hour",
+        "description": "If FFmpeg fails 5x in a row, temporarily disable and alert user",
+        "solution": "Track FFmpeg error rate, implement exponential backoff"
+      },
+      {
+        "title": "Implement retry logic for temporary failures",
+        "effort": "1-2 hours",
+        "description": "Retry frame extraction up to 3x with exponential backoff on timeout",
+        "solution": "Wrap ffmpeg call in retry decorator"
+      },
+      {
+        "title": "Add graceful shutdown with request drain",
+        "effort": "1 hour",
+        "description": "On SIGTERM, stop accepting new requests, wait for in-flight to complete (up to 5 min timeout)",
+        "solution": "Implement shutdown signal handler"
+      }
+    ]
+  },
+
+  "test_recommendations": {
+    "error_condition_tests": [
+      "test_ffmpeg_not_installed_early_error()",
+      "test_ffmpeg_timeout_30s_fallback_image()",
+      "test_corrupt_video_file_graceful_degradation()",
+      "test_disk_full_temp_dir_error_message()",
+      "test_malformed_content_type_no_boundary_400()",
+      "test_upload_exceeds_1gb_rejected()",
+      "test_concurrent_cache_access_no_corruption()",
+      "test_session_file_permission_denied_silent_fail()",
+      "test_pipeline_exception_mid_stage_cleanup()",
+      "test_parallel_extraction_partial_failure_continues()",
+      "test_download_path_traversal_blocked()",
+      "test_response_json_format_consistency()"
+    ],
+    "load_tests": [
+      "test_concurrent_uploads_5x_no_crash()",
+      "test_upload_1gb_file_within_5min_no_oom()",
+      "test_1000_session_history_files_get_history_fast(<100ms)"
+    ],
+    "integration_tests": [
+      "test_end_to_end_with_real_1min_video()",
+      "test_server_graceful_restart_preserves_state()"
+    ]
+  },
+
+  "risk_matrix": {
+    "likelihood_severity": {
+      "path_traversal": { "likelihood": "MEDIUM", "severity": "CRITICAL", "risk_score": 9 },
+      "ffmpeg_timeout": { "likelihood": "HIGH", "severity": "MEDIUM", "risk_score": 7 },
+      "disk_full_oom": { "likelihood": "MEDIUM", "severity": "CRITICAL", "risk_score": 8 },
+      "concurrent_cache_corruption": { "likelihood": "LOW", "severity": "MEDIUM", "risk_score": 4 },
+      "session_file_corruption": { "likelihood": "LOW", "severity": "HIGH", "risk_score": 5 },
+      "background_job_orphaned_state": { "likelihood": "MEDIUM", "severity": "HIGH", "risk_score": 7 }
+    }
+  }
+}

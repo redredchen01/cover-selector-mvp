@@ -101,7 +101,9 @@ class FrameSampler:
         self.extraction_time_sec = time.time() - start_time
         return candidate_frames
 
-    def _extract_frame_ffmpeg(self, video_path: Path, timestamp_sec: float, output_path: Path) -> None:
+    def _extract_frame_ffmpeg(
+        self, video_path: Path, timestamp_sec: float, output_path: Path
+    ) -> None:
         """
         Extract single frame using FFmpeg.
 

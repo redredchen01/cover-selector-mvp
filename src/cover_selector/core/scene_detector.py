@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 import cv2
-from scenedetect import detect, ContentDetector, AdaptiveDetector
+from scenedetect import AdaptiveDetector, ContentDetector, detect
 
 from cover_selector.config import SceneDetectionConfig
 from cover_selector.schemas.scene import Scene
@@ -155,7 +155,7 @@ class SceneDetector:
 
     def _create_single_scene(self) -> List[Scene]:
         """Create a single-scene list representing entire video."""
-        duration = getattr(self, 'video_duration_sec', 0.0)
+        duration = getattr(self, "video_duration_sec", 0.0)
         return [
             Scene(
                 id=0,

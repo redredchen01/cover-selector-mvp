@@ -89,11 +89,7 @@ class OCRDetector:
                 if y_ratio > 0.8:
                     bottom_area += box_area
                 # Center region (< 0.4 margin from sides and top/bottom)
-                elif (
-                    0.15 < y_ratio < 0.85
-                    and x / w > 0.15
-                    and (x + w_box) / w < 0.85
-                ):
+                elif 0.15 < y_ratio < 0.85 and x / w > 0.15 and (x + w_box) / w < 0.85:
                     center_area += box_area
                 # Corners (top-left, top-right, bottom-left, bottom-right)
                 elif (y_ratio < 0.2 or y_end_ratio > 0.8) and (

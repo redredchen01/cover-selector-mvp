@@ -30,10 +30,15 @@ def test_cli_input_must_exist():
     with tempfile.TemporaryDirectory() as tmpdir:
         output_dir = Path(tmpdir) / "output"
 
-        result = runner.invoke(app, [
-            "--input", "/nonexistent/video.mp4",
-            "--output", str(output_dir),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "--input",
+                "/nonexistent/video.mp4",
+                "--output",
+                str(output_dir),
+            ],
+        )
         assert result.exit_code != 0
 
 
@@ -49,10 +54,15 @@ def test_cli_with_valid_video():
 
         output_dir = tmppath / "output"
 
-        result = runner.invoke(app, [
-            "--input", str(video_file),
-            "--output", str(output_dir),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "--input",
+                str(video_file),
+                "--output",
+                str(output_dir),
+            ],
+        )
 
         # Should process or show pre-flight errors gracefully
         # Success: exit_code=0 with "Processing" or similar
@@ -62,7 +72,11 @@ def test_cli_with_valid_video():
             assert "Processing" in result.stdout or "Scene" in result.stdout
         else:
             # Non-zero exit is OK if it's a clear error message
-            assert "Error" in result.stdout or "error" in result.stderr.lower() or "Missing" in result.stdout
+            assert (
+                "Error" in result.stdout
+                or "error" in result.stderr.lower()
+                or "Missing" in result.stdout
+            )
 
 
 def test_cli_creates_output_directory():
@@ -75,10 +89,15 @@ def test_cli_creates_output_directory():
         output_dir = tmppath / "nonexistent" / "output"
         assert not output_dir.exists()
 
-        result = runner.invoke(app, [
-            "--input", str(video_file),
-            "--output", str(output_dir),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "--input",
+                str(video_file),
+                "--output",
+                str(output_dir),
+            ],
+        )
 
         # Output directory should be created OR pre-flight checks should fail
         # (if Tesseract is missing, program exits early without creating directory)
@@ -99,11 +118,17 @@ def test_cli_with_custom_config():
 
         output_dir = tmppath / "output"
 
-        result = runner.invoke(app, [
-            "--input", str(video_file),
-            "--output", str(output_dir),
-            "--config", str(config_file),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "--input",
+                str(video_file),
+                "--output",
+                str(output_dir),
+                "--config",
+                str(config_file),
+            ],
+        )
 
         # Should either load config successfully or show pre-flight check errors
         assert "Config loaded" in result.stdout or "Missing dependencies" in result.stdout
@@ -119,11 +144,20 @@ def test_cli_with_profile_flag():
 
         output_dir = tmppath / "output"
 
-        result = runner.invoke(app, [
-            "--input", str(video_file),
-            "--output", str(output_dir),
-            "--profile",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "--input",
+                str(video_file),
+                "--output",
+                str(output_dir),
+                "--profile",
+            ],
+        )
 
         # With profile, should show memory info or pre-flight errors
-        assert "memory" in result.stdout.lower() or "MB" in result.stdout or "Missing dependencies" in result.stdout
+        assert (
+            "memory" in result.stdout.lower()
+            or "MB" in result.stdout
+            or "Missing dependencies" in result.stdout
+        )

@@ -2,7 +2,7 @@
 
 import gc
 import logging
-from typing import List, Iterator, Any
+from typing import Any, Iterator, List
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,7 @@ class BatchProcessor:
             # Suggest garbage collection after each batch
             gc.collect()
             logger.debug(
-                f"Processed batch {i // self.batch_size + 1}, "
-                f"{len(results)} total results"
+                f"Processed batch {i // self.batch_size + 1}, " f"{len(results)} total results"
             )
 
         return results
@@ -90,8 +89,7 @@ class MemoryMonitor:
         original = config.scorer.batch_size
         reduced = max(1, original // 2)
         logger.warning(
-            f"Memory threshold approaching. "
-            f"Reducing batch size: {original} → {reduced}"
+            f"Memory threshold approaching. " f"Reducing batch size: {original} → {reduced}"
         )
         return reduced
 

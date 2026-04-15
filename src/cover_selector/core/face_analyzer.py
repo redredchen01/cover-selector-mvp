@@ -7,15 +7,15 @@ from cover_selector.config import FaceAnalysisConfig
 # Import MediaPipe components
 try:
     from mediapipe import solutions as mp_solutions
+
     face_detection = mp_solutions.face_detection
 except (ImportError, AttributeError):
     try:
         import mediapipe as mp
+
         face_detection = mp.solutions.face_detection
     except (ImportError, AttributeError):
-        raise ImportError(
-            "MediaPipe not properly installed. Install with: pip install mediapipe"
-        )
+        raise ImportError("MediaPipe not properly installed. Install with: pip install mediapipe")
 
 
 class FaceAnalyzer:

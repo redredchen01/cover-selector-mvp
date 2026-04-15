@@ -4,6 +4,8 @@
 
 Extract perfect video cover frames and generate rich triple-collage compositions automatically.
 
+**Version:** 0.2.0 | **Status:** Production Ready
+
 **Key Features:**
 - 🎯 Intelligent frame selection based on rule-based visual analysis
 - 🎨 Triple-collage composition (1 wide-shot bottom + 2 diverse closeup overlays)
@@ -11,6 +13,10 @@ Extract perfect video cover frames and generate rich triple-collage compositions
 - ⚡ Content diversity optimization (face vs body closeups)
 - 🔄 Extensible analyzer pipeline
 - 🌐 Web UI for interactive testing
+- 🚀 **NEW:** MediaPipe face detection with 468-point landmarks
+- ⚡ **NEW:** Frame-level caching with config-based invalidation
+- 🐳 **NEW:** Docker & multi-cloud deployment support
+- 🔄 **NEW:** Real-time session progress tracking
 
 ## What It Does
 
@@ -24,16 +30,33 @@ The three frames are combined into a 3-panel collage cover image.
 
 ## Installation
 
-### Requirements
+### Option 1: Docker (Recommended)
+
+```bash
+git clone https://github.com/redredchen01/cover-selector-mvp.git
+cd cover-selector-mvp
+
+# Build and run with docker-compose
+docker-compose up --build
+
+# Access at http://localhost:8000
+```
+
+See [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for cloud deployment (AWS, GCP, Azure).
+
+### Option 2: Local Setup
+
+**Requirements:**
 - Python 3.9+
 - FFmpeg
+- Tesseract OCR
 
-### Setup
+**Setup:**
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/cover-selector.git
-cd cover-selector
+git clone https://github.com/redredchen01/cover-selector-mvp.git
+cd cover-selector-mvp
 
 # Create virtual environment
 python -m venv venv
@@ -192,11 +215,19 @@ class MyAnalyzer:
 
 Integrate into the pipeline in `complete_pipeline.py`.
 
+## What's New in v0.2.0
+
+- ✨ **MediaPipe Face Detection:** Real-time 468-point landmark detection with graceful OpenCV fallback
+- ⚡ **Frame-Level Caching:** MD5-based smart cache with config-aware invalidation
+- 🐳 **Docker Support:** Multi-stage builds optimized for production (AWS ECS, Google Cloud Run, Azure)
+- 📊 **Session Progress Tracking:** Real-time processing status via REST API
+- 🧪 **Comprehensive Integration Tests:** 29+ passing tests with 32% code coverage
+- 🔧 **Developer Tools:** Makefile with 20+ commands for building, testing, and deploying
+
 ## Limitations
 
-- **Heuristic-Based:** Uses rule-based visual analysis without ML models
-- **No Face Detection:** Currently uses frame characteristics as proxy for face detection (no MediaPipe)
-- **Local-Only:** Runs entirely locally, no cloud processing
+- **Heuristic-Based Core:** Quality scoring uses rule-based analysis, not ML models
+- **Cache Storage:** File-based cache requires persistent volume in containers
 - **Video Format:** Best results with modern codecs (H.264, VP9)
 
 ## Performance
