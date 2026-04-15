@@ -442,6 +442,7 @@ class ComposerAnalyzer:
                     logger.warning(
                         f"Hard time constraint removed all zoom_2 candidates, using best by quality+diversity"
                     )
+                    best_combined = -float('inf')  # Re-initialize for fallback search
                     for score, feat in candidates:
                         if feat == zoom_1:
                             continue
@@ -454,6 +455,7 @@ class ComposerAnalyzer:
 
                 if zoom_2:
                     selected.append(zoom_2)
+                    type_a = self._get_content_type(zoom_1.largest_face_ratio)
                     type_b = self._get_content_type(zoom_2.largest_face_ratio)
                     logger.info(
                         f"Zoom #2 selected: frame {zoom_2.frame_id} (type: {type_a}/{type_b}, diversity: {zoom_2_diversity:.3f})"

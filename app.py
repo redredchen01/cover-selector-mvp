@@ -232,6 +232,12 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML.encode("utf-8"))
+        elif self.path == "/health":
+            # Health check endpoint for k8s/docker
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "healthy", "version": "0.2.0"}).encode("utf-8"))
         elif self.path == "/api/clear-cache":
             # Clear analyzer cache endpoint
             try:

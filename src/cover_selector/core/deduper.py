@@ -142,6 +142,10 @@ class Deduper:
 
         # Mark duplicate frames
         for group_id, group_frames in groups.items():
+            # Guard against empty groups
+            if not group_frames:
+                logger.warning(f"Deduplication group {group_id} is empty, skipping")
+                continue
             # Find highest-scoring frame in group
             best_frame_id = max(group_frames, key=lambda fid: scores.get(fid, 0.0))
 
