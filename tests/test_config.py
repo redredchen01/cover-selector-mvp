@@ -60,24 +60,24 @@ def test_config_weights_validation():
 def test_config_custom_yaml():
     """Test loading custom YAML with modified values."""
     custom_config = {
-        'scene_detection': {
-            'threshold': 35.0,
-            'min_scene_len': 20,
-            'delta_lum': 1.5,
-            'delta_edges': 0.3,
+        "scene_detection": {
+            "threshold": 35.0,
+            "min_scene_len": 20,
+            "delta_lum": 1.5,
+            "delta_edges": 0.3,
         },
-        'blur_analysis': {
-            'blur_threshold': 25.0,
+        "blur_analysis": {
+            "blur_threshold": 25.0,
         },
-        'scorer': {
-            'top_k': 5,
-            'batch_size': 8,
-        }
+        "scorer": {
+            "top_k": 5,
+            "batch_size": 8,
+        },
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         config_path = Path(tmpdir) / "custom_config.yaml"
-        with open(config_path, 'w') as f:
+        with open(config_path, "w") as f:
             yaml.dump(custom_config, f)
 
         cfg = CoverSelectorConfig.load_yaml(config_path)
@@ -97,9 +97,7 @@ def test_config_threshold_ranges():
 
     # Invalid ranges should fail validation
     with pytest.raises(ValueError):
-        CoverSelectorConfig(
-            blur_analysis={'blur_threshold': -1.0}
-        )
+        CoverSelectorConfig(blur_analysis={"blur_threshold": -1.0})
 
 
 def test_memory_threshold_parameter():

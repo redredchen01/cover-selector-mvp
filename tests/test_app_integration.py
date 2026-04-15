@@ -1,15 +1,15 @@
 """P6: Integration tests - Complete HTTP workflow testing"""
 
 import json
+import os
+import subprocess
+import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
-from urllib.request import urlopen, Request
 from urllib.error import URLError
-import subprocess
-import threading
-import os
-import sys
+from urllib.request import Request, urlopen
 
 # 添加src到路径
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -73,10 +73,14 @@ class TestCoverSelectorApp:
 
             boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW"
             body = (
-                f"--{boundary}\r\n"
-                f'Content-Disposition: form-data; name="video"; filename="test_video.mp4"\r\n'
-                f"Content-Type: video/mp4\r\n\r\n"
-            ).encode() + video_data + f"\r\n--{boundary}--\r\n".encode()
+                (
+                    f"--{boundary}\r\n"
+                    f'Content-Disposition: form-data; name="video"; filename="test_video.mp4"\r\n'
+                    f"Content-Type: video/mp4\r\n\r\n"
+                ).encode()
+                + video_data
+                + f"\r\n--{boundary}--\r\n".encode()
+            )
 
             req = Request(
                 f"{self.base_url}/api/process",
@@ -161,6 +165,7 @@ def run_integration_tests():
     except Exception as e:
         print(f"\n❌ Integration tests failed: {e}")
         import traceback
+
         traceback.print_exc()
         return False
     finally:

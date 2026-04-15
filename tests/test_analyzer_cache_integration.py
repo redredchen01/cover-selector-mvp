@@ -2,18 +2,18 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from cover_selector.config import CoverSelectorConfig
-from cover_selector.core.analyzer_cache import get_analyzer, clear_cache, get_cache_stats
+from cover_selector.core.analyzer_cache import clear_cache, get_analyzer, get_cache_stats
 from cover_selector.core.complete_pipeline import VideoToTripleCollagePipeline
-from cover_selector.core.scene_detector import SceneDetector
-from cover_selector.core.frame_sampler import FrameSampler
-from cover_selector.core.ranker import Ranker
 from cover_selector.core.composer_analyzer import ComposerAnalyzer
+from cover_selector.core.frame_sampler import FrameSampler
 from cover_selector.core.image_compositor import ImageCompositor
+from cover_selector.core.ranker import Ranker
+from cover_selector.core.scene_detector import SceneDetector
 
 
 @pytest.fixture

@@ -44,8 +44,14 @@ class SessionManager:
         self.sessions[session_id] = session
         return session_id
 
-    def update_progress(self, session_id: str, stage: str, progress: int = 0,
-                       total_frames: int = 0, processed_frames: int = 0) -> bool:
+    def update_progress(
+        self,
+        session_id: str,
+        stage: str,
+        progress: int = 0,
+        total_frames: int = 0,
+        processed_frames: int = 0,
+    ) -> bool:
         """Update session progress."""
         if session_id not in self.sessions:
             return False
@@ -77,9 +83,7 @@ class SessionManager:
         """Get upload history."""
         history = []
         history_files = sorted(
-            self.history_dir.glob("*.json"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True
+            self.history_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True
         )[:limit]
         for history_file in history_files:
             try:

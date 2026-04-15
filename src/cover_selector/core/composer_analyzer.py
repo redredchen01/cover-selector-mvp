@@ -62,18 +62,19 @@ class ComposerAnalyzer:
         result = CompositionAnalysisResult()
 
         # Filter and sort by final score (descending)
-        valid_results = [
-            r for r in ranking_results
-            if r.status != "rejected" and r.final_score > 0
-        ]
+        valid_results = [r for r in ranking_results if r.status != "rejected" and r.final_score > 0]
         valid_results.sort(key=lambda x: x.final_score, reverse=True)
 
-        logger.info(f"Composition analysis: {len(valid_results)} valid frames from {len(ranking_results)} total")
+        logger.info(
+            f"Composition analysis: {len(valid_results)} valid frames from {len(ranking_results)} total"
+        )
 
         # Need at least 3 frames for triple-collage, fallback to degraded if fewer
         if len(valid_results) < 3:
             result.is_degraded = True
-            result.degradation_reason = f"Insufficient frames for triple-collage ({len(valid_results)} < 3)"
+            result.degradation_reason = (
+                f"Insufficient frames for triple-collage ({len(valid_results)} < 3)"
+            )
             logger.warning(result.degradation_reason)
 
             # Use first frame as bottom image in degraded mode
@@ -90,10 +91,12 @@ class ComposerAnalyzer:
             result.degradation_reason = None
 
             # Calculate video duration for time diversity
-            if metadata and 'duration' in metadata:
-                video_duration = metadata['duration']
+            if metadata and "duration" in metadata:
+                video_duration = metadata["duration"]
             else:
-                all_timestamps = [f.timestamp_sec for f in frame_features_map.values() if f.timestamp_sec > 0]
+                all_timestamps = [
+                    f.timestamp_sec for f in frame_features_map.values() if f.timestamp_sec > 0
+                ]
                 video_duration = max(all_timestamps) if all_timestamps else 0.0
 
             # Find best bottom frame: prefer complete, well-composed frames
@@ -106,16 +109,13 @@ class ComposerAnalyzer:
                 return result
 
             # Find zoom frames: prefer frames with closeup/detail elements
-            remaining_results = [
-                r for r in valid_results
-                if r.frame_id != bottom_frame.frame_id
-            ]
+            remaining_results = [r for r in valid_results if r.frame_id != bottom_frame.frame_id]
             zoom_frames = self._select_zoom_frames(
                 remaining_results,
                 frame_features_map,
                 count=2,
                 bottom_features=bottom_frame,
-                video_duration=video_duration
+                video_duration=video_duration,
             )
 
             if len(zoom_frames) >= 2:
@@ -134,7 +134,9 @@ class ComposerAnalyzer:
             # Ensure exactly 2 zoom images
             if len(result.zoom_images) < 2:
                 result.is_degraded = True
-                result.degradation_reason = f"Insufficient zoom frames ({len(result.zoom_images)} < 2)"
+                result.degradation_reason = (
+                    f"Insufficient zoom frames ({len(result.zoom_images)} < 2)"
+                )
                 logger.warning(result.degradation_reason)
 
         logger.info(
@@ -146,9 +148,7 @@ class ComposerAnalyzer:
         return result
 
     def _select_bottom_frame(
-        self,
-        ranking_results: List[RankingResult],
-        frame_features_map: Dict[int, FrameFeatures]
+        self, ranking_results: List[RankingResult], frame_features_map: Dict[int, FrameFeatures]
     ) -> FrameFeatures:
         """
         Select the best frame for bottom/base image.
@@ -184,7 +184,7 @@ class ComposerAnalyzer:
                 score += 10
 
             # ENHANCED: Stronger bonus for good composition balance (was ×5, now ×8)
-            if hasattr(features, 'composition_balance_score'):
+            if hasattr(features, "composition_balance_score"):
                 score += features.composition_balance_score * 8
 
             # NEW: Bonus for good exposure (visible details)
@@ -213,7 +213,9 @@ class ComposerAnalyzer:
 
         if candidates:
             candidates.sort(key=lambda x: x[0], reverse=True)
-            logger.info(f"Selected bottom frame: {candidates[0][1].frame_id} (completeness score: {candidates[0][0]:.1f})")
+            logger.info(
+                f"Selected bottom frame: {candidates[0][1].frame_id} (completeness score: {candidates[0][0]:.1f})"
+            )
             return candidates[0][1]
 
         return None
@@ -236,11 +238,7 @@ class ComposerAnalyzer:
         else:
             return "body"
 
-    def _compute_content_diversity(
-        self,
-        frame_a: FrameFeatures,
-        frame_b: FrameFeatures
-    ) -> float:
+    def _compute_content_diversity(self, frame_a: FrameFeatures, frame_b: FrameFeatures) -> float:
         """
         Compute visual content diversity between two frames (0-1).
 
@@ -282,10 +280,10 @@ class ComposerAnalyzer:
         edge_score = min(edge_diff / 0.3, 1.0)
 
         diversity = (
-            type_diversity * 0.50 +  # Content type is most important
-            pos_score * 0.25 +
-            brightness_score * 0.15 +
-            edge_score * 0.10
+            type_diversity * 0.50  # Content type is most important
+            + pos_score * 0.25
+            + brightness_score * 0.15
+            + edge_score * 0.10
         )
 
         logger.debug(
@@ -341,7 +339,7 @@ class ComposerAnalyzer:
                 score += 12  # Also increased from 8 to 12
 
             # Bonus for good composition
-            if hasattr(features, 'composition_balance_score'):
+            if hasattr(features, "composition_balance_score"):
                 score += features.composition_balance_score * 4  # Increased from 3 to 4
 
             # ENHANCED: Stricter exposure check
@@ -362,13 +360,13 @@ class ComposerAnalyzer:
             if bottom_features:
                 brightness_diff = abs(features.brightness_score - bottom_features.brightness_score)
                 if brightness_diff < 20:
-                    score += 6   # Similar brightness = good visual harmony
+                    score += 6  # Similar brightness = good visual harmony
                 elif brightness_diff > 50:
-                    score -= 8   # Too different = jarring contrast
+                    score -= 8  # Too different = jarring contrast
 
                 # Subject scale consistency: zoom should show bigger face than bottom
                 if features.largest_face_ratio > bottom_features.largest_face_ratio * 1.2:
-                    score += 8   # Zoom is actually more zoomed in = expected
+                    score += 8  # Zoom is actually more zoomed in = expected
 
             candidates.append((score, features))
 
@@ -392,7 +390,9 @@ class ComposerAnalyzer:
                     dist_from_bottom = abs(feat.timestamp_sec - bottom_features.timestamp_sec)
                     if dist_from_bottom >= HARD_GAP:
                         zoom_1 = feat
-                        logger.info(f"Zoom #1 selected: frame {feat.frame_id} (type: {self._get_content_type(feat.largest_face_ratio)}, time dist: {dist_from_bottom:.2f}s ≥ {HARD_GAP:.2f}s)")
+                        logger.info(
+                            f"Zoom #1 selected: frame {feat.frame_id} (type: {self._get_content_type(feat.largest_face_ratio)}, time dist: {dist_from_bottom:.2f}s ≥ {HARD_GAP:.2f}s)"
+                        )
                         break
 
             if zoom_1 is None:
@@ -404,7 +404,7 @@ class ComposerAnalyzer:
 
             # === STAGE 2: Select zoom_2 with content diversity preference ===
             if len(candidates) > 1:
-                best_combined = -float('inf')
+                best_combined = -float("inf")
                 zoom_2 = None
                 zoom_2_diversity = 0.0
 
@@ -439,7 +439,9 @@ class ComposerAnalyzer:
 
                 # Fallback: if hard constraint filtered all candidates
                 if zoom_2 is None and len(candidates) > 1:
-                    logger.warning(f"Hard time constraint removed all zoom_2 candidates, using best by quality+diversity")
+                    logger.warning(
+                        f"Hard time constraint removed all zoom_2 candidates, using best by quality+diversity"
+                    )
                     for score, feat in candidates:
                         if feat == zoom_1:
                             continue
@@ -453,10 +455,14 @@ class ComposerAnalyzer:
                 if zoom_2:
                     selected.append(zoom_2)
                     type_b = self._get_content_type(zoom_2.largest_face_ratio)
-                    logger.info(f"Zoom #2 selected: frame {zoom_2.frame_id} (type: {type_a}/{type_b}, diversity: {zoom_2_diversity:.3f})")
+                    logger.info(
+                        f"Zoom #2 selected: frame {zoom_2.frame_id} (type: {type_a}/{type_b}, diversity: {zoom_2_diversity:.3f})"
+                    )
 
             result = selected[:count]
-            logger.info(f"Final zoom frames: {[f.frame_id for f in result]} (content diversity optimized)")
+            logger.info(
+                f"Final zoom frames: {[f.frame_id for f in result]} (content diversity optimized)"
+            )
             return result
 
         return []

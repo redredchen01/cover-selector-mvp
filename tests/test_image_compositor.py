@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from PIL import Image
@@ -22,7 +22,7 @@ def config():
             jpg_progressive=True,
             preserve_exif=False,
             fallback_on_exif_fail=True,
-        )
+        ),
     )
 
 
@@ -78,7 +78,7 @@ def test_make_circular_frame(compositor):
     corner_pixel = circular.getpixel((10, 10))
 
     assert center_pixel[3] == 255  # Center is opaque
-    assert corner_pixel[3] == 0    # Corner is transparent
+    assert corner_pixel[3] == 0  # Corner is transparent
 
 
 def test_compose_basic(compositor, test_images, tmp_path):
@@ -115,7 +115,9 @@ def test_compose_with_different_input_sizes(compositor, tmp_path):
 
     output_path = tmp_path / "composed.jpg"
 
-    result = compositor.compose(str(bottom_path), str(zoom1_path), str(zoom2_path), str(output_path))
+    result = compositor.compose(
+        str(bottom_path), str(zoom1_path), str(zoom2_path), str(output_path)
+    )
 
     assert result.exists()
     # Output should maintain bottom image size
@@ -153,7 +155,9 @@ def test_compose_rgba_conversion(compositor, tmp_path):
 
     output_path = tmp_path / "composed.jpg"
 
-    result = compositor.compose(str(bottom_path), str(zoom1_path), str(zoom2_path), str(output_path))
+    result = compositor.compose(
+        str(bottom_path), str(zoom1_path), str(zoom2_path), str(output_path)
+    )
 
     assert result.exists()
     # Output should always be RGB JPEG
@@ -192,7 +196,9 @@ def test_save_with_metadata(compositor, test_images, tmp_path):
     output_path = str(tmp_path / "composed_with_exif.jpg")
 
     # Save without EXIF source
-    result = compositor.compose(bottom_path, zoom1_path, zoom2_path, output_path, frame_timestamps={})
+    result = compositor.compose(
+        bottom_path, zoom1_path, zoom2_path, output_path, frame_timestamps={}
+    )
 
     assert result.exists()
 

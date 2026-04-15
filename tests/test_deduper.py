@@ -1,7 +1,7 @@
 """Tests for deduplication."""
 
-import pytest
 import numpy as np
+import pytest
 
 from cover_selector.config import DeduplicationConfig
 from cover_selector.core.deduper import Deduper
@@ -65,8 +65,9 @@ def test_deduplicate_disabled(config):
     deduper = Deduper(config)
 
     # Create mock frames (won't load images, just check logic)
-    from cover_selector.schemas.candidate_frame import CandidateFrame
     from pathlib import Path
+
+    from cover_selector.schemas.candidate_frame import CandidateFrame
 
     frame = CandidateFrame(
         frame_id=0,

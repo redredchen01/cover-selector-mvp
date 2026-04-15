@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 """Cover Selector MVP Web Application - Optimized."""
 
+import io
 import json
 import os
 import sys
 import tempfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import io
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 os.chdir(Path(__file__).parent)
@@ -226,11 +226,12 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(HTML.encode('utf-8'))
+            self.wfile.write(HTML.encode("utf-8"))
         elif self.path == "/api/clear-cache":
             # Clear analyzer cache endpoint
             try:
                 from cover_selector.core.analyzer_cache import clear_cache, get_cache_stats
+
                 print(f"[INFO] Cache clear requested", file=sys.stderr)
                 stats_before = get_cache_stats()
                 clear_cache()
@@ -240,28 +241,32 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
                 response = {
                     "status": "success",
                     "message": "Analyzer cache cleared",
-                    "cached_before": stats_before["cached_analyzers"]
+                    "cached_before": stats_before["cached_analyzers"],
                 }
-                self.wfile.write(json.dumps(response).encode('utf-8'))
+                self.wfile.write(json.dumps(response).encode("utf-8"))
             except Exception as e:
                 print(f"[ERROR] Cache clear failed: {e}", file=sys.stderr)
                 self.send_response(500)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
         elif self.path.startswith("/download"):
             try:
                 import base64
                 from urllib.parse import unquote
+
                 file_path = self.path.split("file=")[1]
                 # Try Base64 decode first
                 try:
-                    file_path = base64.b64decode(file_path).decode('utf-8')
+                    file_path = base64.b64decode(file_path).decode("utf-8")
                 except:
                     # Fallback to URL decode
                     file_path = unquote(file_path)
                 file_path = Path(file_path)
-                print(f"[DEBUG] Download request: {file_path}, exists={file_path.exists()}", file=sys.stderr)
+                print(
+                    f"[DEBUG] Download request: {file_path}, exists={file_path.exists()}",
+                    file=sys.stderr,
+                )
                 if file_path.exists():
                     self.send_response(200)
                     self.send_header("Content-type", "image/jpeg")
@@ -275,6 +280,7 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(f"[ERROR] Download: {e}", file=sys.stderr)
                 import traceback
+
                 traceback.print_exc(file=sys.stderr)
                 self.send_error(500)
         else:
@@ -285,7 +291,7 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
             try:
                 content_length = int(self.headers.get("Content-Length", 0))
                 content_type = self.headers.get("Content-Type", "")
-                
+
                 print(f"[INFO] Processing request: {content_length} bytes", file=sys.stderr)
 
                 # Parse multipart form data
@@ -294,11 +300,11 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
 
                 boundary = content_type.split("boundary=")[1].split(";")[0].encode()
                 body = self.rfile.read(content_length)
-                
+
                 # Simple multipart parser
                 video_data = None
                 parts = body.split(b"--" + boundary)
-                
+
                 for part in parts:
                     if b"filename=" in part and b"video" in part:
                         # Find the end of headers
@@ -320,7 +326,7 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
                 with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
                     tmp.write(video_data)
                     video_path = tmp.name
-                
+
                 print(f"[INFO] Video saved to: {video_path}", file=sys.stderr)
 
                 # Create output directory
@@ -329,9 +335,9 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
 
                 # Run pipeline
                 print(f"[INFO] Starting pipeline...", file=sys.stderr)
-                from cover_selector.core.complete_pipeline import VideoToTripleCollagePipeline
-                from cover_selector.core.analyzer_cache import clear_cache
                 from cover_selector.config import CoverSelectorConfig
+                from cover_selector.core.analyzer_cache import clear_cache
+                from cover_selector.core.complete_pipeline import VideoToTripleCollagePipeline
 
                 # Clear analyzer cache to avoid mixing results from previous videos
                 clear_cache()
@@ -359,8 +365,8 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
                     "mode": results["cover_mode"],
                     "summary": {
                         "total_candidates": results["candidates_count"],
-                        "valid_candidates": results["candidates_count"]
-                    }
+                        "valid_candidates": results["candidates_count"],
+                    },
                 }
 
                 # Add frame details to report for frontend display
@@ -376,19 +382,20 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
                     "cover_mode": results["cover_mode"],
                     "final_cover": results["final_cover"],
                     "composition": composition,
-                    "report": report
+                    "report": report,
                 }
-                self.wfile.write(json.dumps(response, default=str).encode('utf-8'))
+                self.wfile.write(json.dumps(response, default=str).encode("utf-8"))
 
             except Exception as e:
                 print(f"[ERROR] {e}", file=sys.stderr)
                 import traceback
+
                 traceback.print_exc(file=sys.stderr)
-                
+
                 self.send_response(400)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
         else:
             self.send_error(404)
 
@@ -398,11 +405,11 @@ class CoverSelectorHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = 8002
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎬 Cover Selector MVP")
-    print("="*60)
+    print("=" * 60)
     print(f"✅ 打开浏览器: http://localhost:{port}")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
     server = HTTPServer(("", port), CoverSelectorHandler)
     try:

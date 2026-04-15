@@ -11,7 +11,7 @@ from typing import Dict, List
 logger = logging.getLogger(__name__)
 
 from cover_selector.config import CoverSelectorConfig
-from cover_selector.core.analyzer_cache import get_analyzer, clear_cache, get_cache_stats
+from cover_selector.core.analyzer_cache import clear_cache, get_analyzer, get_cache_stats
 from cover_selector.core.composer_analyzer import ComposerAnalyzer
 from cover_selector.core.composition_report_builder import CompositionReportBuilder
 from cover_selector.core.frame_sampler import FrameSampler
@@ -160,8 +160,8 @@ class VideoToTripleCollagePipeline:
                 "bottom_image": {
                     "frame_id": composition_result.bottom_image.frame_id,
                     "timestamp_sec": composition_result.bottom_image.timestamp_sec,
-                    "blur_score": composition_result.bottom_image.blur_score
-                }
+                    "blur_score": composition_result.bottom_image.blur_score,
+                },
             }
         else:
             logger.info("  ✨ Triple-collage mode")
@@ -172,16 +172,16 @@ class VideoToTripleCollagePipeline:
                 "bottom_image": {
                     "frame_id": composition_result.bottom_image.frame_id,
                     "timestamp_sec": composition_result.bottom_image.timestamp_sec,
-                    "blur_score": composition_result.bottom_image.blur_score
+                    "blur_score": composition_result.bottom_image.blur_score,
                 },
                 "zoom_images": [
                     {
                         "frame_id": z.frame_id,
                         "timestamp_sec": z.timestamp_sec,
-                        "blur_score": z.blur_score
+                        "blur_score": z.blur_score,
                     }
                     for z in composition_result.zoom_images
-                ]
+                ],
             }
 
         logger.info("📍 Stage 6: Extracting Frame Images from Video...")

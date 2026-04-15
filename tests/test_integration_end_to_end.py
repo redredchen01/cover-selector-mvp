@@ -16,19 +16,25 @@ from cover_selector.schemas.frame_features import FrameFeatures
 
 def create_test_video(video_path: str, duration_seconds: float = 5.0) -> None:
     """Create a test video file using ffmpeg."""
-    import subprocess
     import os
+    import subprocess
 
     # Use ffmpeg to create a simple test video (more reliable than OpenCV VideoWriter)
     try:
         cmd = [
-            "ffmpeg", "-f", "lavfi", "-i",
+            "ffmpeg",
+            "-f",
+            "lavfi",
+            "-i",
             f"color=c=blue:s=640x480:d={duration_seconds}",
-            "-f", "lavfi", "-i",
+            "-f",
+            "lavfi",
+            "-i",
             f"sine=f=1000:d={duration_seconds}",
-            "-pix_fmt", "yuv420p",
+            "-pix_fmt",
+            "yuv420p",
             "-y",  # Overwrite without asking
-            video_path
+            video_path,
         ]
         subprocess.run(cmd, check=True, capture_output=True, timeout=30)
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -47,8 +53,10 @@ def create_test_video(video_path: str, duration_seconds: float = 5.0) -> None:
             # Simple pattern
             frame[:, :] = [100 + (frame_num % 50), 150, 200]
             # Add moving circle
-            x = int((frame_num % int(duration_seconds * fps)) / (duration_seconds * fps) * frame_size[0])
-            cv2.circle(frame, (x, frame_size[1]//2), 30, (0, 255, 0), -1)
+            x = int(
+                (frame_num % int(duration_seconds * fps)) / (duration_seconds * fps) * frame_size[0]
+            )
+            cv2.circle(frame, (x, frame_size[1] // 2), 30, (0, 255, 0), -1)
             writer.write(frame)
 
         writer.release()
@@ -78,6 +86,7 @@ def test_end_to_end_frame_sampling(temp_video, config):
     sampler = FrameSampler(config)
 
     from cover_selector.core.scene_detector import SceneDetector
+
     detector = SceneDetector(config.scene_detection)
     scenes = detector.detect(temp_video)
 
@@ -98,6 +107,7 @@ def test_frame_cache_hit_improves_performance(temp_video, config):
     cache = FrameCache()
 
     from cover_selector.core.scene_detector import SceneDetector
+
     detector = SceneDetector(config.scene_detection)
     scenes = detector.detect(temp_video)
 
@@ -129,6 +139,7 @@ def test_feature_extraction_with_empty_video(config):
         create_test_video(str(video_path), duration_seconds=0.1)
 
         from cover_selector.core.scene_detector import SceneDetector
+
         detector = SceneDetector(config.scene_detection)
 
         # Should handle short video gracefully
@@ -254,8 +265,9 @@ def test_cache_invalidation_on_config_change():
 
 def test_session_manager_concurrent_sessions():
     """Test session manager with concurrent sessions."""
-    from cover_selector.web import SessionManager
     import tempfile
+
+    from cover_selector.web import SessionManager
 
     with tempfile.TemporaryDirectory() as tmpdir:
         manager = SessionManager(history_dir=tmpdir)

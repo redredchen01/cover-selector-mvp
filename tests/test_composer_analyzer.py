@@ -105,9 +105,15 @@ def test_compose_degraded_mode_insufficient_frames(analyzer):
 def test_compose_selects_complete_bottom_frame(analyzer):
     """Test that bottom frame prefers complete (non-closeup) images."""
     ranking_results = [
-        RankingResult(frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}),  # Closeup
-        RankingResult(frame_id=1, status="accepted", final_score=0.8, final_score_breakdown={}),  # Complete
-        RankingResult(frame_id=2, status="accepted", final_score=0.7, final_score_breakdown={}),  # Closeup
+        RankingResult(
+            frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}
+        ),  # Closeup
+        RankingResult(
+            frame_id=1, status="accepted", final_score=0.8, final_score_breakdown={}
+        ),  # Complete
+        RankingResult(
+            frame_id=2, status="accepted", final_score=0.7, final_score_breakdown={}
+        ),  # Closeup
     ]
 
     frame_features = {
@@ -211,9 +217,15 @@ def test_compose_selects_complete_bottom_frame(analyzer):
 def test_compose_selects_closeup_zoom_frames(analyzer):
     """Test that zoom frames prefer closeup/detailed images."""
     ranking_results = [
-        RankingResult(frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}),  # Complete
-        RankingResult(frame_id=1, status="accepted", final_score=0.7, final_score_breakdown={}),  # Closeup
-        RankingResult(frame_id=2, status="accepted", final_score=0.6, final_score_breakdown={}),  # Closeup
+        RankingResult(
+            frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}
+        ),  # Complete
+        RankingResult(
+            frame_id=1, status="accepted", final_score=0.7, final_score_breakdown={}
+        ),  # Closeup
+        RankingResult(
+            frame_id=2, status="accepted", final_score=0.6, final_score_breakdown={}
+        ),  # Closeup
     ]
 
     frame_features = {
@@ -379,10 +391,18 @@ def test_compose_zoom_time_diversity(analyzer):
     - Expect: t=2.1 rejected, t=8.0 and t=5.0 selected
     """
     ranking_results = [
-        RankingResult(frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}),  # Bottom
-        RankingResult(frame_id=1, status="accepted", final_score=0.8, final_score_breakdown={}),  # Too close
-        RankingResult(frame_id=2, status="accepted", final_score=0.7, final_score_breakdown={}),  # Good distance
-        RankingResult(frame_id=3, status="accepted", final_score=0.6, final_score_breakdown={}),  # Good distance
+        RankingResult(
+            frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}
+        ),  # Bottom
+        RankingResult(
+            frame_id=1, status="accepted", final_score=0.8, final_score_breakdown={}
+        ),  # Too close
+        RankingResult(
+            frame_id=2, status="accepted", final_score=0.7, final_score_breakdown={}
+        ),  # Good distance
+        RankingResult(
+            frame_id=3, status="accepted", final_score=0.6, final_score_breakdown={}
+        ),  # Good distance
     ]
 
     frame_features = {
@@ -505,7 +525,7 @@ def test_compose_zoom_time_diversity(analyzer):
     }
 
     # Pass video_duration to enable time diversity
-    metadata = {'duration': 10.0}
+    metadata = {"duration": 10.0}
     result = analyzer.compose(ranking_results, frame_features, metadata=metadata)
 
     assert result.is_degraded is False
@@ -527,10 +547,18 @@ def test_compose_zoom_brightness_harmony(analyzer):
     - Expect: Zoom A selected despite lower base score due to harmony bonus
     """
     ranking_results = [
-        RankingResult(frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}),  # Bottom
-        RankingResult(frame_id=1, status="accepted", final_score=0.8, final_score_breakdown={}),  # Zoom A (harmony match)
-        RankingResult(frame_id=2, status="accepted", final_score=0.85, final_score_breakdown={}),  # Zoom B (high base, bad harmony)
-        RankingResult(frame_id=3, status="accepted", final_score=0.75, final_score_breakdown={}),  # Zoom C (filler)
+        RankingResult(
+            frame_id=0, status="accepted", final_score=0.9, final_score_breakdown={}
+        ),  # Bottom
+        RankingResult(
+            frame_id=1, status="accepted", final_score=0.8, final_score_breakdown={}
+        ),  # Zoom A (harmony match)
+        RankingResult(
+            frame_id=2, status="accepted", final_score=0.85, final_score_breakdown={}
+        ),  # Zoom B (high base, bad harmony)
+        RankingResult(
+            frame_id=3, status="accepted", final_score=0.75, final_score_breakdown={}
+        ),  # Zoom C (filler)
     ]
 
     frame_features = {
@@ -652,7 +680,7 @@ def test_compose_zoom_brightness_harmony(analyzer):
         ),
     }
 
-    metadata = {'duration': 5.0}  # Enable time diversity
+    metadata = {"duration": 5.0}  # Enable time diversity
     result = analyzer.compose(ranking_results, frame_features, metadata=metadata)
 
     assert result.is_degraded is False
@@ -686,52 +714,124 @@ def test_compose_zoom_content_diversity_face_vs_body(analyzer):
 
     frame_features = {
         0: FrameFeatures(
-            frame_id=0, timestamp_sec=1.0, blur_score=85.0, laplacian_variance=100.0,
-            edge_density=0.3, brightness_score=50.0, contrast_score=50.0,
-            overexposure_score=10.0, underexposure_score=10.0, ocr_text_count=0,
-            ocr_text_area_ratio=0.0, bottom_subtitle_ratio=0.0, corner_text_ratio=0.0,
-            center_text_ratio=0.0, face_count=1, largest_face_ratio=0.1, face_edge_cutoff_ratio=0.0,
-            primary_face_center_offset=0.5, is_closeup=False, is_subject_too_small=False,
-            is_subject_cutoff=False, subject_center_offset=0.5, composition_balance_score=0.8,
-            duplicate_group_id=None, duplicate_similarity_score=0.0, final_score=0.9,
+            frame_id=0,
+            timestamp_sec=1.0,
+            blur_score=85.0,
+            laplacian_variance=100.0,
+            edge_density=0.3,
+            brightness_score=50.0,
+            contrast_score=50.0,
+            overexposure_score=10.0,
+            underexposure_score=10.0,
+            ocr_text_count=0,
+            ocr_text_area_ratio=0.0,
+            bottom_subtitle_ratio=0.0,
+            corner_text_ratio=0.0,
+            center_text_ratio=0.0,
+            face_count=1,
+            largest_face_ratio=0.1,
+            face_edge_cutoff_ratio=0.0,
+            primary_face_center_offset=0.5,
+            is_closeup=False,
+            is_subject_too_small=False,
+            is_subject_cutoff=False,
+            subject_center_offset=0.5,
+            composition_balance_score=0.8,
+            duplicate_group_id=None,
+            duplicate_similarity_score=0.0,
+            final_score=0.9,
             final_score_breakdown={},
         ),
         1: FrameFeatures(
-            frame_id=1, timestamp_sec=5.0, blur_score=80.0, laplacian_variance=95.0,
-            edge_density=0.4, brightness_score=50.0, contrast_score=50.0,
-            overexposure_score=10.0, underexposure_score=10.0, ocr_text_count=0,
-            ocr_text_area_ratio=0.0, bottom_subtitle_ratio=0.0, corner_text_ratio=0.0,
-            center_text_ratio=0.0, face_count=1, largest_face_ratio=0.5, face_edge_cutoff_ratio=0.0,
-            primary_face_center_offset=0.1, is_closeup=True, is_subject_too_small=False,
-            is_subject_cutoff=False, subject_center_offset=0.5, composition_balance_score=0.7,
-            duplicate_group_id=None, duplicate_similarity_score=0.0, final_score=0.8,
+            frame_id=1,
+            timestamp_sec=5.0,
+            blur_score=80.0,
+            laplacian_variance=95.0,
+            edge_density=0.4,
+            brightness_score=50.0,
+            contrast_score=50.0,
+            overexposure_score=10.0,
+            underexposure_score=10.0,
+            ocr_text_count=0,
+            ocr_text_area_ratio=0.0,
+            bottom_subtitle_ratio=0.0,
+            corner_text_ratio=0.0,
+            center_text_ratio=0.0,
+            face_count=1,
+            largest_face_ratio=0.5,
+            face_edge_cutoff_ratio=0.0,
+            primary_face_center_offset=0.1,
+            is_closeup=True,
+            is_subject_too_small=False,
+            is_subject_cutoff=False,
+            subject_center_offset=0.5,
+            composition_balance_score=0.7,
+            duplicate_group_id=None,
+            duplicate_similarity_score=0.0,
+            final_score=0.8,
             final_score_breakdown={},
         ),
         2: FrameFeatures(
-            frame_id=2, timestamp_sec=5.5, blur_score=79.0, laplacian_variance=94.0,
-            edge_density=0.41, brightness_score=50.0, contrast_score=50.0,
-            overexposure_score=10.0, underexposure_score=10.0, ocr_text_count=0,
-            ocr_text_area_ratio=0.0, bottom_subtitle_ratio=0.0, corner_text_ratio=0.0,
-            center_text_ratio=0.0, face_count=1, largest_face_ratio=0.45, face_edge_cutoff_ratio=0.0,
-            primary_face_center_offset=0.15, is_closeup=True, is_subject_too_small=False,
-            is_subject_cutoff=False, subject_center_offset=0.5, composition_balance_score=0.69,
-            duplicate_group_id=None, duplicate_similarity_score=0.0, final_score=0.75,
+            frame_id=2,
+            timestamp_sec=5.5,
+            blur_score=79.0,
+            laplacian_variance=94.0,
+            edge_density=0.41,
+            brightness_score=50.0,
+            contrast_score=50.0,
+            overexposure_score=10.0,
+            underexposure_score=10.0,
+            ocr_text_count=0,
+            ocr_text_area_ratio=0.0,
+            bottom_subtitle_ratio=0.0,
+            corner_text_ratio=0.0,
+            center_text_ratio=0.0,
+            face_count=1,
+            largest_face_ratio=0.45,
+            face_edge_cutoff_ratio=0.0,
+            primary_face_center_offset=0.15,
+            is_closeup=True,
+            is_subject_too_small=False,
+            is_subject_cutoff=False,
+            subject_center_offset=0.5,
+            composition_balance_score=0.69,
+            duplicate_group_id=None,
+            duplicate_similarity_score=0.0,
+            final_score=0.75,
             final_score_breakdown={},
         ),
         3: FrameFeatures(
-            frame_id=3, timestamp_sec=8.0, blur_score=78.0, laplacian_variance=92.0,
-            edge_density=0.1, brightness_score=70.0, contrast_score=50.0,
-            overexposure_score=10.0, underexposure_score=10.0, ocr_text_count=0,
-            ocr_text_area_ratio=0.0, bottom_subtitle_ratio=0.0, corner_text_ratio=0.0,
-            center_text_ratio=0.0, face_count=0, largest_face_ratio=0.08, face_edge_cutoff_ratio=0.0,
-            primary_face_center_offset=0.5, is_closeup=True, is_subject_too_small=False,
-            is_subject_cutoff=False, subject_center_offset=0.5, composition_balance_score=0.65,
-            duplicate_group_id=None, duplicate_similarity_score=0.0, final_score=0.7,
+            frame_id=3,
+            timestamp_sec=8.0,
+            blur_score=78.0,
+            laplacian_variance=92.0,
+            edge_density=0.1,
+            brightness_score=70.0,
+            contrast_score=50.0,
+            overexposure_score=10.0,
+            underexposure_score=10.0,
+            ocr_text_count=0,
+            ocr_text_area_ratio=0.0,
+            bottom_subtitle_ratio=0.0,
+            corner_text_ratio=0.0,
+            center_text_ratio=0.0,
+            face_count=0,
+            largest_face_ratio=0.08,
+            face_edge_cutoff_ratio=0.0,
+            primary_face_center_offset=0.5,
+            is_closeup=True,
+            is_subject_too_small=False,
+            is_subject_cutoff=False,
+            subject_center_offset=0.5,
+            composition_balance_score=0.65,
+            duplicate_group_id=None,
+            duplicate_similarity_score=0.0,
+            final_score=0.7,
             final_score_breakdown={},
         ),
     }
 
-    metadata = {'duration': 10.0}
+    metadata = {"duration": 10.0}
     result = analyzer.compose(ranking_results, frame_features, metadata=metadata)
 
     assert result.is_degraded is False
@@ -739,5 +839,9 @@ def test_compose_zoom_content_diversity_face_vs_body(analyzer):
     assert result.zoom_images[0].frame_id == 1  # Best quality, face close-up
     # Frame 3 (body/scene) should be zoom_2, NOT frame 2 (similar face)
     zoom_ids = {z.frame_id for z in result.zoom_images}
-    assert 3 in zoom_ids, "Frame 3 (body content type) should win over frame 2 due to content diversity"
-    assert 2 not in zoom_ids, "Frame 2 (similar face close-up) should lose to frame 3 (different content type)"
+    assert (
+        3 in zoom_ids
+    ), "Frame 3 (body content type) should win over frame 2 due to content diversity"
+    assert (
+        2 not in zoom_ids
+    ), "Frame 2 (similar face close-up) should lose to frame 3 (different content type)"

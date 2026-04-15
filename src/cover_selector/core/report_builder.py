@@ -5,9 +5,9 @@ from pathlib import Path
 from shutil import copy2
 from typing import Dict, List
 
-from cover_selector.schemas.ranking_result import RankingResult
 from cover_selector.schemas.candidate_frame import CandidateFrame
 from cover_selector.schemas.frame_features import FrameFeatures
+from cover_selector.schemas.ranking_result import RankingResult
 
 
 class ReportBuilder:
@@ -63,9 +63,7 @@ class ReportBuilder:
             output_files["final_cover.jpg"] = final_cover_path
 
         # Copy candidate frames
-        frames_dir = self._copy_candidate_frames(
-            candidate_frames, ranking_results[:top_k]
-        )
+        frames_dir = self._copy_candidate_frames(candidate_frames, ranking_results[:top_k])
         output_files["candidate_frames"] = frames_dir
 
         # Generate JSON reports
@@ -74,9 +72,7 @@ class ReportBuilder:
         )
         output_files["top_candidates.json"] = top_candidates_path
 
-        scoring_report_path = self._build_scoring_report_json(
-            ranking_results, all_features
-        )
+        scoring_report_path = self._build_scoring_report_json(ranking_results, all_features)
         output_files["scoring_report.json"] = scoring_report_path
 
         reject_log_path = self._build_reject_log_json(ranking_results)
@@ -128,15 +124,17 @@ class ReportBuilder:
             frame = candidate_frames.get(fid)
             features = all_features.get(fid)
 
-            candidates.append({
-                "rank": result.rank,
-                "frame_id": fid,
-                "timestamp": frame.timestamp_sec if frame else 0.0,
-                "final_score": result.final_score,
-                "confidence": result.confidence_score,
-                "status": result.status,
-                "score_breakdown": result.score_breakdown,
-            })
+            candidates.append(
+                {
+                    "rank": result.rank,
+                    "frame_id": fid,
+                    "timestamp": frame.timestamp_sec if frame else 0.0,
+                    "final_score": result.final_score,
+                    "confidence": result.confidence_score,
+                    "status": result.status,
+                    "score_breakdown": result.score_breakdown,
+                }
+            )
 
         with open(output_path, "w") as f:
             json.dump(
@@ -164,21 +162,23 @@ class ReportBuilder:
             features = all_features.get(fid)
 
             if features:
-                results.append({
-                    "frame_id": fid,
-                    "rank": result.rank,
-                    "final_score": result.final_score,
-                    "status": result.status,
-                    "features": {
-                        "blur_score": features.blur_score,
-                        "brightness_score": features.brightness_score,
-                        "contrast_score": features.contrast_score,
-                        "face_count": features.face_count,
-                        "composition_balance": features.composition_balance_score,
-                        "ocr_text_area_ratio": features.ocr_text_area_ratio,
-                    },
-                    "score_breakdown": result.score_breakdown,
-                })
+                results.append(
+                    {
+                        "frame_id": fid,
+                        "rank": result.rank,
+                        "final_score": result.final_score,
+                        "status": result.status,
+                        "features": {
+                            "blur_score": features.blur_score,
+                            "brightness_score": features.brightness_score,
+                            "contrast_score": features.contrast_score,
+                            "face_count": features.face_count,
+                            "composition_balance": features.composition_balance_score,
+                            "ocr_text_area_ratio": features.ocr_text_area_ratio,
+                        },
+                        "score_breakdown": result.score_breakdown,
+                    }
+                )
 
         with open(output_path, "w") as f:
             json.dump(
@@ -202,12 +202,14 @@ class ReportBuilder:
         rejected = []
         for result in ranking_results:
             if result.status == "rejected":
-                rejected.append({
-                    "frame_id": result.frame_id,
-                    "violation_severity": result.violation_severity_score,
-                    "violation_reasons": result.violation_reasons,
-                    "final_score": result.final_score,
-                })
+                rejected.append(
+                    {
+                        "frame_id": result.frame_id,
+                        "violation_severity": result.violation_severity_score,
+                        "violation_reasons": result.violation_reasons,
+                        "final_score": result.final_score,
+                    }
+                )
 
         with open(output_path, "w") as f:
             json.dump(
