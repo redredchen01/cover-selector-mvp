@@ -102,7 +102,7 @@ class ImageCompositor:
         Create a circular frame from image with transparent background.
 
         Returns RGBA image where circle is opaque and outside is transparent.
-        Crops to square (preserving aspect ratio) instead of stretching.
+        This allows proper overlay with alpha blending - no white background.
 
         Args:
             image: Input image
@@ -111,32 +111,8 @@ class ImageCompositor:
         Returns:
             RGBA Image with circular frame (circle opaque, outside transparent)
         """
-        # First, crop image to square while preserving aspect ratio
-        width, height = image.size
-
-        if width != height:
-            # Crop to square: use the smaller dimension
-            min_dim = min(width, height)
-
-            if width > height:
-                # Image is wider: crop left and right
-                left = (width - min_dim) // 2
-                top = 0
-                right = left + min_dim
-                bottom = min_dim
-            else:
-                # Image is taller: crop top and bottom, keep center
-                left = 0
-                top = (height - min_dim) // 2
-                right = min_dim
-                bottom = top + min_dim
-
-            img_cropped = image.crop((left, top, right, bottom))
-        else:
-            img_cropped = image
-
-        # Now resize the square image to the target size
-        img_resized = img_cropped.resize((size, size), Image.Resampling.LANCZOS)
+        # Resize image to square
+        img_resized = image.resize((size, size), Image.Resampling.LANCZOS)
 
         # Create circular mask
         mask = Image.new('L', (size, size), 0)

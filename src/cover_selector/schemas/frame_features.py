@@ -56,21 +56,6 @@ class FrameFeatures(BaseModel):
     primary_face_center_offset: float = Field(
         0.0, ge=0, le=1, description="Primary face offset from center"
     )
-    face_confidence: float = Field(
-        0.0, ge=0, le=1, description="Primary face detection confidence (0-1)"
-    )
-    face_center_x: float = Field(
-        0.0, ge=0, le=1, description="Primary face center X coordinate (0-1)"
-    )
-    face_center_y: float = Field(
-        0.0, ge=0, le=1, description="Primary face center Y coordinate (0-1)"
-    )
-    face_size_ratio: float = Field(
-        0.0, ge=0, le=1, description="Primary face size ratio to image"
-    )
-    face_landmarks_json: Optional[str] = Field(
-        None, description="Face landmarks JSON (468 points) if detected"
-    )
 
     # Composition features
     is_closeup: bool = Field(False, description="Face too large (closeup)")
